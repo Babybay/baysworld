@@ -7,8 +7,6 @@
   </div>
 
 
-
-
   <!-- System Status -->
   <div class="window" style="max-width: 400px; margin-left: 0;">
     <div class="title-bar">
@@ -178,9 +176,6 @@
       const btn = form.querySelector('button');
       btn.textContent = action + '...';
       btn.disabled = true;
-      alert(action + ' application... This process may take a few seconds. Please wait.');
-      // Allow form submission to continue
-      // We re-enable in case it fails or back button is pressed, though reload happens usually.
       setTimeout(() => { btn.disabled = false; btn.textContent = action.replace('ing', ''); }, 10000);
     }
   </script>

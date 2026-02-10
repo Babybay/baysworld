@@ -75,7 +75,7 @@ new Worker(
             {
                 cwd: buildDir,
                 stdio: 'inherit',
-                timeout: 5 * 60 * 1000, // 5 menit
+                timeout: 15 * 60 * 1000, // 15 menit
             }
         );
 
