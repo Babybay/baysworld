@@ -1,6 +1,59 @@
 <%- include('partials/header') %>
 
+  <div style="margin-bottom: 15px; padding: 10px; border: 2px groove white;">
+    <p style="margin: 0; font-weight: bold;">Welcome to BaysWorld Platform Manager</p>
+    <p style="margin: 5px 0 0 0;">A lightweight Platform-as-a-Service (PaaS) for deploying and managing Node.js
+      applications. Monitor system status, deploy zip files, and manage your containers with a classic experience.</p>
+  </div>
 
+
+
+
+  <!-- System Status -->
+  <div class="window" style="max-width: 400px; margin-left: 0;">
+    <div class="title-bar">
+      <span>System Status</span>
+    </div>
+    <div class="window-body">
+      <table style="border: none;">
+        <tr>
+          <td style="border: none;">API Server</td>
+          <td style="border: none;"><span class="status-running"
+              style="padding: 2px 5px; border: 1px solid #000;">ONLINE</span></td>
+        </tr>
+        <tr>
+          <td style="border: none;">Database</td>
+          <td style="border: none;">
+            <% if (systemStatus.database==='running' ) { %>
+              <span class="status-running" style="padding: 2px 5px; border: 1px solid #000;">ONLINE</span>
+              <% } else { %>
+                <span class="status-failed" style="padding: 2px 5px; border: 1px solid #000;">OFFLINE</span>
+                <% } %>
+          </td>
+        </tr>
+        <tr>
+          <td style="border: none;">Worker (Build)</td>
+          <td style="border: none;">
+            <% if (systemStatus.workerBuild==='running' ) { %>
+              <span class="status-running" style="padding: 2px 5px; border: 1px solid #000;">ONLINE</span>
+              <% } else { %>
+                <span class="status-failed" style="padding: 2px 5px; border: 1px solid #000;">OFFLINE</span>
+                <% } %>
+          </td>
+        </tr>
+        <tr>
+          <td style="border: none;">Worker (Runtime)</td>
+          <td style="border: none;">
+            <% if (systemStatus.workerRuntime==='running' ) { %>
+              <span class="status-running" style="padding: 2px 5px; border: 1px solid #000;">ONLINE</span>
+              <% } else { %>
+                <span class="status-failed" style="padding: 2px 5px; border: 1px solid #000;">OFFLINE</span>
+                <% } %>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
 
   <!-- Deploy Section -->
   <div class="window" style="max-width: 400px; margin-left: 0;">
@@ -71,6 +124,14 @@
         </tbody>
       </table>
     </div>
+  </div>
+
+
+  <div class="status-bar">
+    <span>Ready</span>
+    <span>User: Guest</span>
+    <span>v1.0.0</span>
+    <span style="margin-left: auto;">© 2026 BaysWorld Inc.</span>
   </div>
 
   <script>

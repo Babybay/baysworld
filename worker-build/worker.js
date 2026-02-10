@@ -5,12 +5,26 @@ const yaml = require('js-yaml');
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { Pool } = require('pg');
 
 const connection = new IORedis({
     host: 'localhost',
     port: 6379,
     maxRetriesPerRequest: null,
 });
+
+const pool = new Pool({
+    user: 'postgres',
+    host: 'localhost',
+    database: 'baysworld',
+    password: 'babybay',
+    port: 5433,
+});
+
+// HEARTBEAT
+setInterval(() => {
+    connection.set('status:worker-build', 'ok', 'EX', 10);
+}, 5000);
 
 const TMP_ROOT = path.join(__dirname, 'tmp');
 const runtimeQueue = new Queue('runtime-queue', { connection });
@@ -69,7 +83,11 @@ new Worker(
         }
 
 
-        if (result.status !== 0) {
+        if (build.status !== 0) {
+            await pool.query(
+                `UPDATE apps SET status='failed' WHERE id=$1`,
+                [appId]
+            );
             throw new Error('Docker build failed');
         }
 

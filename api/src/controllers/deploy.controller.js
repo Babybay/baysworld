@@ -51,7 +51,7 @@ exports.deployApp = async (req, res) => {
       zipPath,
     });
 
-    console.log('INSERT APP:', appId, userId);
+    console.log(`[ACTION] Deploy App: Uploaded ${zipPath} for User ${userId}, App ID ${appId}`);
 
     await pool.query(
       `INSERT INTO apps (id, user_id, status)

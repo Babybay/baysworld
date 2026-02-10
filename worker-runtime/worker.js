@@ -10,6 +10,11 @@ const connection = new IORedis({
   maxRetriesPerRequest: null,
 });
 
+// HEARTBEAT
+setInterval(() => {
+  connection.set('status:worker-runtime', 'ok', 'EX', 10);
+}, 5000);
+
 // ================= POSTGRES =================
 const pool = new Pool({
   user: 'postgres',

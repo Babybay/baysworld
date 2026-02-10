@@ -1,9 +1,11 @@
 /* Windows 95/98 Style CSS */
 :root {
-  --bg-color: #008080; /* Teal background */
+  --bg-color: #008080;
+  /* Teal background */
   --win-gray: #c0c0c0;
   --win-dark-gray: #808080;
-  --win-lock-gray: #404040; /* darker for disabled */
+  --win-lock-gray: #404040;
+  /* darker for disabled */
   --win-light: #ffffff;
   --win-text: #000000;
   --title-bar-blue: #000080;
@@ -12,11 +14,13 @@
 
 body {
   background-color: var(--bg-color);
-  font-family: "Tahoma", "Verdana", sans-serif; /* Windows 95/XP fonts */
+  font-family: "Tahoma", "Verdana", sans-serif;
+  /* Windows 95/XP fonts */
   color: var(--win-text);
   margin: 0;
   padding: 20px;
-  font-size: 11px; /* Classic small font size */
+  font-size: 11px;
+  /* Classic small font size */
 }
 
 /* Generic Window Container */
@@ -98,7 +102,8 @@ table {
   width: 100%;
   border-collapse: collapse;
   background-color: #fff;
-  border: 2px solid var(--win-dark-gray); /* Sunken look */
+  border: 2px solid var(--win-dark-gray);
+  /* Sunken look */
   border-right-color: var(--win-light);
   border-bottom-color: var(--win-light);
 }
@@ -123,12 +128,15 @@ td {
 .status-running {
   background-color: #dfffe0;
 }
+
 .status-stopped {
   background-color: #fffde7;
 }
+
 .status-failed {
   background-color: #ffe0e0;
 }
+
 .status-queued {
   background-color: #f0f0f0;
 }
@@ -137,4 +145,17 @@ h2 {
   font-size: 14px;
   margin-top: 0;
   margin-bottom: 10px;
+}
+
+.status-bar {
+  margin-top: 20px;
+  border-top: 2px solid var(--win-dark-gray);
+  border-left: 2px solid var(--win-dark-gray);
+  border-right: 2px solid var(--win-light);
+  border-bottom: 2px solid var(--win-light);
+  padding: 2px 5px;
+  background-color: var(--win-gray);
+  font-size: 11px;
+  display: flex;
+  gap: 20px;
 }
