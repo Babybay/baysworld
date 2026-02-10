@@ -1,0 +1,57 @@
+<%- include('partials/header') %>
+
+<h2>Applications</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Name</th>
+      <th>Status</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% apps.forEach(app => { %>
+      <tr class="status-<%= app.status %>">
+        <td><%= app.id %></td>
+
+        <td>
+          <form method="post" action="/apps/<%= app.id %>/rename">
+            <input type="text" name="name" value="<%= app.name || '' %>">
+            <button>Rename</button>
+          </form>
+        </td>
+
+        <td><%= app.status %></td>
+
+        <td class="actions">
+          <% if (app.status === 'running') { %>
+            <form method="post" action="/apps/<%= app.id %>/stop">
+              <button>Stop</button>
+            </form>
+          <% } %>
+
+          <% if (app.status === 'stopped') { %>
+            <form method="post" action="/apps/<%= app.id %>/start">
+              <button>Start</button>
+            </form>
+          <% } %>
+
+          <button onclick="deleteApp(<%= app.id %>)">Delete</button>
+        </td>
+      </tr>
+    <% }) %>
+  </tbody>
+</table>
+
+<script>
+function deleteApp(id) {
+  if (!confirm('Delete app ' + id + '?')) return;
+  fetch('/apps/' + id, { method: 'DELETE' })
+    .then(() => location.reload());
+}
+</script>
+
+<%- include('partials/footer') %>
