@@ -8,10 +8,10 @@ const {
 
 const router = express.Router();
 
-router.post('/apps/:id/start', startApp);
-router.post('/apps/:id/stop', stopApp);
-router.delete('/apps/:id', deleteApp);
-router.post('/apps/:id/rename', renameApp);
+router.post('/:id/start', startApp);
+router.post('/:id/stop', stopApp);
+router.delete('/:id', deleteApp);
+router.post('/:id/rename', renameApp);
 
 
 module.exports = router;
