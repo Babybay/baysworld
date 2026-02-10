@@ -36,6 +36,11 @@ new Worker(
 
         console.log(`🚧 Building app ${appId} for user ${userId}`);
 
+        await pool.query(
+            "UPDATE apps SET status='building' WHERE id=$1",
+            [appId]
+        );
+
         const buildDir = path.join(TMP_ROOT, `app_${appId}`);
         fs.mkdirSync(buildDir, { recursive: true });
 

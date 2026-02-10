@@ -127,18 +127,27 @@ td {
 /* Status Colors - Muted for retro feel */
 .status-running {
   background-color: #dfffe0;
+  /* Pale Green */
 }
 
 .status-stopped {
   background-color: #fffde7;
+  /* Pale Yellow */
 }
 
 .status-failed {
   background-color: #ffe0e0;
+  /* Pale Red */
 }
 
 .status-queued {
   background-color: #f0f0f0;
+  /* Light Gray */
+}
+
+.status-building {
+  background-color: #e0f0ff;
+  /* Pale Blue */
 }
 
 h2 {

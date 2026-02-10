@@ -106,13 +106,15 @@
 
               <td class="actions">
                 <% if (app.status==='running' ) { %>
-                  <form method="post" action="/apps/<%= app.id %>/stop" style="display:inline;">
+                  <form method="post" action="/apps/<%= app.id %>/stop" style="display:inline;"
+                    onsubmit="handleAction(this, 'Stopping')">
                     <button>Stop</button>
                   </form>
                   <% } %>
 
                     <% if (app.status==='stopped' ) { %>
-                      <form method="post" action="/apps/<%= app.id %>/start" style="display:inline;">
+                      <form method="post" action="/apps/<%= app.id %>/start" style="display:inline;"
+                        onsubmit="handleAction(this, 'Starting')">
                         <button>Start</button>
                       </form>
                       <% } %>
@@ -170,6 +172,16 @@
       if (!confirm('Delete app ' + id + '?')) return;
       fetch('/apps/' + id, { method: 'DELETE' })
         .then(() => location.reload());
+    }
+
+    function handleAction(form, action) {
+      const btn = form.querySelector('button');
+      btn.textContent = action + '...';
+      btn.disabled = true;
+      alert(action + ' application... This process may take a few seconds. Please wait.');
+      // Allow form submission to continue
+      // We re-enable in case it fails or back button is pressed, though reload happens usually.
+      setTimeout(() => { btn.disabled = false; btn.textContent = action.replace('ing', ''); }, 10000);
     }
   </script>
 
