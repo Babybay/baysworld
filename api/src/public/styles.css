@@ -1302,3 +1302,11 @@ a:hover {
     flex-direction: column;
     height: 100vh;
 }
+/* Fix tree icons */
+.tree-item img {
+    width: 16px;
+    height: 16px;
+    margin-right: 6px;
+    vertical-align: text-bottom;
+    display: inline-block;
+}

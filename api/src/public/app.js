@@ -59,6 +59,7 @@ const API = {
   },
   // Auth
   login(username, password) { return this.request('POST', '/auth/login', { username, password }); },
+  register(username, password, vipKey) { return this.request('POST', '/auth/register', { username, password, vipKey }); },
   verify() { return this.request('GET', '/auth/verify'); },
   changePassword(currentPassword, newPassword) { return this.request('PUT', '/auth/change-password', { currentPassword, newPassword }); },
   // Projects
@@ -149,7 +150,7 @@ function getCatClass(cat) {
 }
 function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
 function setStatus(msg) { const el = document.getElementById('statusText'); if (el) el.textContent = msg; }
-function setAddr(path) { const el = document.getElementById('addressBar'); if (el) el.textContent = 'http://baysworld.dev' + path; }
+function setAddr(path) { const el = document.getElementById('addressBar'); if (el) el.textContent = 'http://baysworld.xyz' + path; }
 
 // ── Toast ──
 function toast(message, type = 'info') {
@@ -186,6 +187,30 @@ function showLoginScreen() {
 
 function hideLogin() {
   document.getElementById('loginScreen').style.display = 'none';
+}
+
+function switchAuthTab(tab) {
+  const loginForm = document.getElementById('loginForm');
+  const registerForm = document.getElementById('registerForm');
+  const tabLogin = document.getElementById('tabLogin');
+  const tabRegister = document.getElementById('tabRegister');
+  const errEl = document.getElementById('loginError');
+
+  errEl.style.display = 'none';
+
+  if (tab === 'login') {
+    loginForm.style.display = 'block';
+    registerForm.style.display = 'none';
+    tabLogin.classList.add('active');
+    tabRegister.classList.remove('active');
+    setTimeout(() => document.getElementById('loginUser').focus(), 50);
+  } else {
+    loginForm.style.display = 'none';
+    registerForm.style.display = 'block';
+    tabLogin.classList.remove('active');
+    tabRegister.classList.add('active');
+    setTimeout(() => document.getElementById('regUser').focus(), 50);
+  }
 }
 
 function updateAdminUI() {
@@ -291,14 +316,14 @@ async function renderDashboard() {
     const visitorNum = String(Math.floor(Math.random() * 9000) + 1000).padStart(6, '0');
 
     c.innerHTML = `
-      <div class="retro-marquee"><span>★ Welcome to BaysWorld Developer Hub ★ Your personal project portfolio and knowledge base ★ Powered by Node.js ★</span></div>
+      <div class="retro-marquee"><span>★ Welcome to Babybay's World a.k.a BaysWorld Hub ★ Babybay (SB) personal project portfolio and knowledge base ★ Powered by Node.js ★</span></div>
 
       <div class="welcome-box" style="margin-top:10px;">
-        <h2>📟 Welcome to BaysWorld v2.0</h2>
+        <h2>📟 Welcome to BaysWorld</h2>
         <p>A lightweight Project Portfolio & Developer Knowledge Base.<br>
         Manage your projects, write notes in Markdown, and keep your developer knowledge organized.</p>
         <p style="margin-top:4px;font-size:10px;color:#808080;">
-          <i>Best viewed with Internet Explorer 5.0 or Netscape Navigator 4.7 at 800×600 resolution</i>
+          <i>Best viewed at 800×600 resolution</i>
         </p>
       </div>
 
@@ -669,6 +694,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     } finally {
       btn.disabled = false;
       btn.textContent = 'Log In';
+    }
+  });
+
+  // ── Register Form Handler ──
+  document.getElementById('registerForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('regBtn');
+    const errEl = document.getElementById('loginError');
+    const username = document.getElementById('regUser').value.trim();
+    const password = document.getElementById('regPass').value;
+    const vipKey = document.getElementById('regVipKey').value.trim();
+
+    btn.disabled = true;
+    btn.textContent = 'Creating account...';
+    errEl.style.display = 'none';
+
+    try {
+      const data = await API.register(username, password, vipKey);
+      Auth.setSession(data.token, data.username);
+      hideLogin();
+      updateAdminUI();
+      toast('Welcome, ' + data.username + '! Account created.', 'success');
+      Router.resolve();
+    } catch (err) {
+      errEl.textContent = err.message || 'Registration failed';
+      errEl.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Create Account';
     }
   });
 

@@ -5,40 +5,80 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BaysWorld — Developer Hub</title>
+    <link rel="icon" type="image/svg+xml" href="/logo.svg">
     <meta name="description" content="BaysWorld — Personal project portfolio and developer knowledge base">
     <link rel="stylesheet" href="/styles.css">
 </head>
 
 <body>
-    <!-- LOGIN SCREEN (hidden by default, shown when user clicks Login) -->
+    <!-- LOGIN / REGISTER SCREEN -->
     <div class="login-screen" id="loginScreen" style="display:none;">
         <div class="win-window login-window">
             <div class="win-title-bar">
-                <span>🔐 BaysWorld — Administrator Login</span>
-                <button class="title-close-btn" onclick="hideLogin()">✕</button>
+                <span>� Authentication</span>
+                <button class="win-btn-close" onclick="hideLogin()">×</button>
             </div>
             <div class="win-body">
                 <div style="text-align:center;margin-bottom:10px;">
                     <div style="font-size:36px;">🖥️</div>
-                    <b>BaysWorld v2.0</b>
+                    <b>BaysWorld</b>
                     <p style="font-size:10px;color:#808080;">Enter admin credentials to manage content</p>
                 </div>
+
+                <!-- Tabs -->
+                <div class="auth-tabs"
+                    style="display:flex; gap:5px; margin-bottom:10px; border-bottom:1px solid var(--win-dark);">
+                    <button class="win-btn active" id="tabLogin" onclick="switchAuthTab('login')"
+                        style="flex:1;">Login</button>
+                    <button class="win-btn" id="tabRegister" onclick="switchAuthTab('register')"
+                        style="flex:1;">Register</button>
+                </div>
+
+                <div id="loginError" class="login-error" style="display:none;"></div>
+
+                <!-- LOGIN FORM -->
                 <form id="loginForm">
                     <div class="form-group">
-                        <label class="form-label">👤 Username</label>
-                        <input class="form-input" id="loginUser" name="username" autocomplete="username" required>
+                        <label class="form-label">Username:</label>
+                        <input type="text" class="form-input" id="loginUser" required autocomplete="username">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">🔑 Password</label>
-                        <input class="form-input" id="loginPass" name="password" type="password"
-                            autocomplete="current-password" required>
+                        <label class="form-label">Password:</label>
+                        <input type="password" class="form-input" id="loginPass" required
+                            autocomplete="current-password">
                     </div>
-                    <div id="loginError" class="login-error" style="display:none;"></div>
-                    <div class="form-actions" style="justify-content:center;">
-                        <button type="button" class="win-btn" onclick="hideLogin()">Cancel</button>
-                        <button type="submit" class="win-btn win-btn-primary" id="loginBtn">Log In</button>
+                    <div class="form-actions" style="justify-content:center;margin-top:15px;">
+                        <button type="submit" class="win-btn win-btn-primary" id="loginBtn" style="width:100%;">Log
+                            In</button>
                     </div>
                 </form>
+
+                <!-- REGISTER FORM -->
+                <form id="registerForm" style="display:none;">
+                    <div class="form-group">
+                        <label class="form-label">New Username:</label>
+                        <input type="text" class="form-input" id="regUser" required autocomplete="off" minlength="3">
+                        <span class="form-hint">Letters/numbers only</span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">New Password:</label>
+                        <input type="password" class="form-input" id="regPass" required autocomplete="new-password"
+                            minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">VIP Access Key:</label>
+                        <input type="password" class="form-input" id="regVipKey" required autocomplete="off">
+                        <span class="form-hint">Required for admin creation</span>
+                    </div>
+                    <div class="form-actions" style="justify-content:center;margin-top:15px;">
+                        <button type="submit" class="win-btn win-btn-primary" id="regBtn" style="width:100%;">Create
+                            Account</button>
+                    </div>
+                </form>
+
+                <div style="margin-top:10px;text-align:center;">
+                    <button class="win-btn" onclick="hideLogin()">Cancel</button>
+                </div>
             </div>
         </div>
     </div>
@@ -48,7 +88,7 @@
 
         <!-- TOP TOOLBAR -->
         <div class="toolbar">
-            <span class="toolbar-title">📁 BaysWorld v2.0 — Developer Hub</span>
+            <span class="toolbar-title">📁 BaysWorld</span>
             <span class="toolbar-right">
                 <!-- Shown when logged in -->
                 <span id="adminControls" style="display:none;">
