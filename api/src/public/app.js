@@ -150,7 +150,7 @@ function getCatClass(cat) {
 }
 function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
 function setStatus(msg) { const el = document.getElementById('statusText'); if (el) el.textContent = msg; }
-function setAddr(path) { const el = document.getElementById('addressBar'); if (el) el.textContent = 'http://baysworld.xyz' + path; }
+function setAddr(path) { const el = document.getElementById('addressBar'); if (el) el.textContent = 'http://thebaysworld.xyz' + path; }
 
 // ── Toast ──
 function toast(message, type = 'info') {
