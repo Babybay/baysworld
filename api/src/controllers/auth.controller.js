@@ -1,4 +1,7 @@
-const { getAdmin, saveAdmin, verifyPassword, hashPassword, generateToken, verifyToken } = require('../services/auth.service');
+const {
+    getAdmin, getAdminByUsername, createAdmin, saveAdmin, getAllAdmins,
+    verifyPassword, hashPassword, generateToken, verifyToken, verifyVipKey,
+} = require('../services/auth.service');
 
 // POST /api/auth/login
 exports.login = async (req, res) => {
@@ -9,8 +12,8 @@ exports.login = async (req, res) => {
     }
 
     try {
-        const admin = await getAdmin();
-        if (!admin || username !== admin.username) {
+        const admin = await getAdminByUsername(username);
+        if (!admin) {
             return res.status(401).json({ error: 'Invalid credentials.' });
         }
 
@@ -23,6 +26,46 @@ exports.login = async (req, res) => {
     } catch (err) {
         console.error('Login error:', err);
         res.status(500).json({ error: 'Login failed' });
+    }
+};
+
+// POST /api/auth/register
+exports.register = async (req, res) => {
+    const { username, password, vipKey } = req.body;
+
+    if (!username || !password || !vipKey) {
+        return res.status(400).json({ error: 'Username, password, and VIP key are required.' });
+    }
+
+    if (!verifyVipKey(vipKey)) {
+        return res.status(403).json({ error: 'Invalid VIP key. Access denied.' });
+    }
+
+    if (username.length < 3) {
+        return res.status(400).json({ error: 'Username must be at least 3 characters.' });
+    }
+
+    if (password.length < 6) {
+        return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+    }
+
+    // Only allow alphanumeric + underscore usernames
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+        return res.status(400).json({ error: 'Username can only contain letters, numbers, and underscores.' });
+    }
+
+    try {
+        const existing = await getAdminByUsername(username);
+        if (existing) {
+            return res.status(409).json({ error: 'Username already taken.' });
+        }
+
+        const admin = await createAdmin(username, password);
+        const token = generateToken(admin.username);
+        res.status(201).json({ token, username: admin.username, message: 'Admin account created!' });
+    } catch (err) {
+        console.error('Register error:', err);
+        res.status(500).json({ error: 'Registration failed' });
     }
 };
 
@@ -56,7 +99,13 @@ exports.changePassword = async (req, res) => {
     }
 
     try {
-        const admin = await getAdmin();
+        // Use the logged-in user's username from JWT
+        const username = req.user?.username;
+        if (!username) {
+            return res.status(401).json({ error: 'Not authenticated.' });
+        }
+
+        const admin = await getAdminByUsername(username);
         if (!admin) {
             return res.status(500).json({ error: 'Admin not found' });
         }

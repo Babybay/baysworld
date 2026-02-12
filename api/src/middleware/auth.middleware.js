@@ -7,7 +7,7 @@ const { verifyToken } = require('../services/auth.service');
  */
 function authMiddleware(req, res, next) {
     // Skip auth for auth endpoints and health check
-    if (req.path === '/api/auth/login' || req.path === '/api/auth/verify' || req.path === '/api/health') {
+    if (req.path === '/api/auth/login' || req.path === '/api/auth/register' || req.path === '/api/auth/verify' || req.path === '/api/health') {
         return next();
     }
 
