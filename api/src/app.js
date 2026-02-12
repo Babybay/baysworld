@@ -1,32 +1,32 @@
 const express = require('express');
-const deployRoutes = require('./routes/deploy.routes');
-const appsRoutes = require('./routes/apps.routes');
-const uiRoutes = require('./routes/ui.routes');
-const rateLimit = require('express-rate-limit');
-const methodOverride = require('method-override');
+const cors = require('cors');
+const path = require('path');
+const projectRoutes = require('./routes/projects.routes');
+const noteRoutes = require('./routes/notes.routes');
 
 const app = express();
 
-// ---------------- MIDDLEWARE DASAR ----------------
-app.set('view engine', 'ejs');
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-app.use(express.json({ limit: '50mb' }));
+// Middleware
+app.use(cors());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
 
-app.use(express.static('public'));
+// Serve frontend
+app.use(express.static(path.join(__dirname, 'public')));
 
-const deployLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000,
-    max: 10,
-    message: { error: 'Deploy rate limit exceeded' },
+// API Routes
+app.use('/api/projects', projectRoutes);
+app.use('/api/notes', noteRoutes);
+
+// API health check
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// ---------------- ROUTES ----------------
-app.use('/api/deploy', deployLimiter);
-app.use('/api', deployRoutes);
-app.use('/apps', appsRoutes);
-app.use('/', uiRoutes);
-
-// ---------------- METHOD OVERRIDE ----------------
-app.use(methodOverride('_method'));
+// SPA fallback — serve index.html for all non-API routes
+app.use((req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 module.exports = app;

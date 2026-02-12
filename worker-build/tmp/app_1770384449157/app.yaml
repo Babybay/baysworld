@@ -1,3 +1,0 @@
-runtime: node
-start: node index.js
-port: 3000
