@@ -1,43 +1,12 @@
-const { v4: uuidv4 } = require('uuid');
-const store = require('../services/store');
+const Store = require('../services/store');
 
-const COLLECTION = 'notes';
-
-exports.getAll = (req, res) => {
+exports.getAll = async (req, res) => {
     try {
-        let notes = store.findAll(COLLECTION);
-
-        // Filter by category
-        if (req.query.category) {
-            notes = notes.filter(n => n.category === req.query.category);
-        }
-
-        // Filter by tag
-        if (req.query.tag) {
-            notes = notes.filter(n => n.tags && n.tags.includes(req.query.tag));
-        }
-
-        // Filter pinned only
-        if (req.query.pinned === 'true') {
-            notes = notes.filter(n => n.pinned);
-        }
-
-        // Search by title/content
-        if (req.query.q) {
-            const q = req.query.q.toLowerCase();
-            notes = notes.filter(n =>
-                n.title.toLowerCase().includes(q) ||
-                (n.content && n.content.toLowerCase().includes(q))
-            );
-        }
-
-        // Sort: pinned first, then by updatedAt descending
-        notes.sort((a, b) => {
-            if (a.pinned && !b.pinned) return -1;
-            if (!a.pinned && b.pinned) return 1;
-            return new Date(b.updatedAt) - new Date(a.updatedAt);
+        const notes = await Store.getAllNotes({
+            category: req.query.category,
+            tag: req.query.tag,
+            q: req.query.q,
         });
-
         res.json(notes);
     } catch (err) {
         console.error('Error fetching notes:', err);
@@ -45,9 +14,9 @@ exports.getAll = (req, res) => {
     }
 };
 
-exports.getById = (req, res) => {
+exports.getById = async (req, res) => {
     try {
-        const note = store.findById(COLLECTION, req.params.id);
+        const note = await Store.getNote(req.params.id);
         if (!note) return res.status(404).json({ error: 'Note not found' });
         res.json(note);
     } catch (err) {
@@ -56,27 +25,15 @@ exports.getById = (req, res) => {
     }
 };
 
-exports.create = (req, res) => {
+exports.create = async (req, res) => {
     try {
         const { title, content, category, tags, pinned } = req.body;
-
         if (!title || !title.trim()) {
             return res.status(400).json({ error: 'Note title is required' });
         }
-
-        const now = new Date().toISOString();
-        const note = {
-            id: uuidv4(),
-            title: title.trim(),
-            content: content || '',
-            category: category || 'General',
-            tags: tags || [],
-            pinned: pinned || false,
-            createdAt: now,
-            updatedAt: now,
-        };
-
-        store.create(COLLECTION, note);
+        const note = await Store.createNote({
+            title: title.trim(), content, category, tags, pinned,
+        });
         res.status(201).json(note);
     } catch (err) {
         console.error('Error creating note:', err);
@@ -84,9 +41,9 @@ exports.create = (req, res) => {
     }
 };
 
-exports.update = (req, res) => {
+exports.update = async (req, res) => {
     try {
-        const updated = store.update(COLLECTION, req.params.id, req.body);
+        const updated = await Store.updateNote(req.params.id, req.body);
         if (!updated) return res.status(404).json({ error: 'Note not found' });
         res.json(updated);
     } catch (err) {
@@ -95,9 +52,9 @@ exports.update = (req, res) => {
     }
 };
 
-exports.remove = (req, res) => {
+exports.remove = async (req, res) => {
     try {
-        const deleted = store.remove(COLLECTION, req.params.id);
+        const deleted = await Store.deleteNote(req.params.id);
         if (!deleted) return res.status(404).json({ error: 'Note not found' });
         res.json({ message: 'Note deleted' });
     } catch (err) {
@@ -106,10 +63,9 @@ exports.remove = (req, res) => {
     }
 };
 
-exports.getCategories = (req, res) => {
+exports.getCategories = async (req, res) => {
     try {
-        const notes = store.findAll(COLLECTION);
-        const categories = [...new Set(notes.map(n => n.category).filter(Boolean))];
+        const categories = await Store.getCategories();
         res.json(categories);
     } catch (err) {
         console.error('Error fetching categories:', err);

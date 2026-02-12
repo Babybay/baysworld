@@ -1,68 +1,190 @@
-const fs = require('fs');
-const path = require('path');
+/**
+ * Store module — PostgreSQL-backed CRUD operations.
+ * Replaces JSON file storage with database queries.
+ */
+const pool = require('./db');
 
-const DATA_DIR = path.join(__dirname, '..', '..', 'data');
+const Store = {
+    // ── Projects ────────────────────────────────────────
 
-// Ensure data directory exists
-if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+    async getAllProjects({ status, tag, q } = {}) {
+        let query = 'SELECT * FROM projects';
+        const params = [];
+        const conditions = [];
+
+        if (status) {
+            params.push(status);
+            conditions.push(`status = $${params.length}`);
+        }
+        if (tag) {
+            params.push(tag);
+            conditions.push(`$${params.length} = ANY(tags)`);
+        }
+        if (q) {
+            params.push(`%${q.toLowerCase()}%`);
+            const idx = params.length;
+            conditions.push(`(LOWER(name) LIKE $${idx} OR LOWER(description) LIKE $${idx})`);
+        }
+
+        if (conditions.length) query += ' WHERE ' + conditions.join(' AND ');
+        query += ' ORDER BY updated_at DESC';
+
+        const { rows } = await pool.query(query, params);
+        return rows.map(mapProject);
+    },
+
+    async getProject(id) {
+        const { rows } = await pool.query('SELECT * FROM projects WHERE id = $1', [id]);
+        return rows.length ? mapProject(rows[0]) : null;
+    },
+
+    async createProject(data) {
+        const { rows } = await pool.query(
+            `INSERT INTO projects (name, description, tech_stack, status, github_url, live_url, tags, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING *`,
+            [data.name, data.description || '', data.techStack || [], data.status || 'active',
+            data.githubUrl || '', data.liveUrl || '', data.tags || [], data.notes || '']
+        );
+        return mapProject(rows[0]);
+    },
+
+    async updateProject(id, data) {
+        const fields = [];
+        const params = [];
+        let idx = 1;
+
+        if (data.name !== undefined) { fields.push(`name = $${idx++}`); params.push(data.name); }
+        if (data.description !== undefined) { fields.push(`description = $${idx++}`); params.push(data.description); }
+        if (data.techStack !== undefined) { fields.push(`tech_stack = $${idx++}`); params.push(data.techStack); }
+        if (data.status !== undefined) { fields.push(`status = $${idx++}`); params.push(data.status); }
+        if (data.githubUrl !== undefined) { fields.push(`github_url = $${idx++}`); params.push(data.githubUrl); }
+        if (data.liveUrl !== undefined) { fields.push(`live_url = $${idx++}`); params.push(data.liveUrl); }
+        if (data.tags !== undefined) { fields.push(`tags = $${idx++}`); params.push(data.tags); }
+        if (data.notes !== undefined) { fields.push(`notes = $${idx++}`); params.push(data.notes); }
+
+        fields.push(`updated_at = NOW()`);
+        params.push(id);
+
+        const { rows } = await pool.query(
+            `UPDATE projects SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`,
+            params
+        );
+        return rows.length ? mapProject(rows[0]) : null;
+    },
+
+    async deleteProject(id) {
+        const { rowCount } = await pool.query('DELETE FROM projects WHERE id = $1', [id]);
+        return rowCount > 0;
+    },
+
+    // ── Notes ───────────────────────────────────────────
+
+    async getAllNotes({ category, tag, q } = {}) {
+        let query = 'SELECT * FROM notes';
+        const params = [];
+        const conditions = [];
+
+        if (category) {
+            params.push(category);
+            conditions.push(`category = $${params.length}`);
+        }
+        if (tag) {
+            params.push(tag);
+            conditions.push(`$${params.length} = ANY(tags)`);
+        }
+        if (q) {
+            params.push(`%${q.toLowerCase()}%`);
+            const idx = params.length;
+            conditions.push(`(LOWER(title) LIKE $${idx} OR LOWER(content) LIKE $${idx})`);
+        }
+
+        if (conditions.length) query += ' WHERE ' + conditions.join(' AND ');
+        query += ' ORDER BY pinned DESC, updated_at DESC';
+
+        const { rows } = await pool.query(query, params);
+        return rows.map(mapNote);
+    },
+
+    async getNote(id) {
+        const { rows } = await pool.query('SELECT * FROM notes WHERE id = $1', [id]);
+        return rows.length ? mapNote(rows[0]) : null;
+    },
+
+    async createNote(data) {
+        const { rows } = await pool.query(
+            `INSERT INTO notes (title, content, category, tags, pinned)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+            [data.title, data.content || '', data.category || 'General',
+            data.tags || [], data.pinned || false]
+        );
+        return mapNote(rows[0]);
+    },
+
+    async updateNote(id, data) {
+        const fields = [];
+        const params = [];
+        let idx = 1;
+
+        if (data.title !== undefined) { fields.push(`title = $${idx++}`); params.push(data.title); }
+        if (data.content !== undefined) { fields.push(`content = $${idx++}`); params.push(data.content); }
+        if (data.category !== undefined) { fields.push(`category = $${idx++}`); params.push(data.category); }
+        if (data.tags !== undefined) { fields.push(`tags = $${idx++}`); params.push(data.tags); }
+        if (data.pinned !== undefined) { fields.push(`pinned = $${idx++}`); params.push(data.pinned); }
+
+        fields.push(`updated_at = NOW()`);
+        params.push(id);
+
+        const { rows } = await pool.query(
+            `UPDATE notes SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`,
+            params
+        );
+        return rows.length ? mapNote(rows[0]) : null;
+    },
+
+    async deleteNote(id) {
+        const { rowCount } = await pool.query('DELETE FROM notes WHERE id = $1', [id]);
+        return rowCount > 0;
+    },
+
+    async getCategories() {
+        const { rows } = await pool.query(
+            'SELECT DISTINCT category FROM notes WHERE category IS NOT NULL ORDER BY category'
+        );
+        return rows.map(r => r.category);
+    },
+};
+
+// ── Mappers: snake_case → camelCase ──
+
+function mapProject(row) {
+    return {
+        id: row.id,
+        name: row.name,
+        description: row.description,
+        techStack: row.tech_stack || [],
+        status: row.status,
+        githubUrl: row.github_url,
+        liveUrl: row.live_url,
+        tags: row.tags || [],
+        notes: row.notes,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+    };
 }
 
-function getFilePath(collection) {
-    return path.join(DATA_DIR, `${collection}.json`);
+function mapNote(row) {
+    return {
+        id: row.id,
+        title: row.title,
+        content: row.content,
+        category: row.category,
+        tags: row.tags || [],
+        pinned: row.pinned,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+    };
 }
 
-function readCollection(collection) {
-    const filePath = getFilePath(collection);
-    if (!fs.existsSync(filePath)) {
-        fs.writeFileSync(filePath, '[]', 'utf-8');
-        return [];
-    }
-    const raw = fs.readFileSync(filePath, 'utf-8');
-    try {
-        return JSON.parse(raw);
-    } catch {
-        return [];
-    }
-}
-
-function writeCollection(collection, data) {
-    const filePath = getFilePath(collection);
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
-}
-
-function findAll(collection) {
-    return readCollection(collection);
-}
-
-function findById(collection, id) {
-    const items = readCollection(collection);
-    return items.find(item => item.id === id) || null;
-}
-
-function create(collection, item) {
-    const items = readCollection(collection);
-    items.push(item);
-    writeCollection(collection, items);
-    return item;
-}
-
-function update(collection, id, updates) {
-    const items = readCollection(collection);
-    const index = items.findIndex(item => item.id === id);
-    if (index === -1) return null;
-    items[index] = { ...items[index], ...updates, updatedAt: new Date().toISOString() };
-    writeCollection(collection, items);
-    return items[index];
-}
-
-function remove(collection, id) {
-    const items = readCollection(collection);
-    const index = items.findIndex(item => item.id === id);
-    if (index === -1) return false;
-    items.splice(index, 1);
-    writeCollection(collection, items);
-    return true;
-}
-
-module.exports = { findAll, findById, create, update, remove };
+module.exports = Store;

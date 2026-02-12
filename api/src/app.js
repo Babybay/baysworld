@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const authMiddleware = require('./middleware/auth.middleware');
+const authRoutes = require('./routes/auth.routes');
 const projectRoutes = require('./routes/projects.routes');
 const noteRoutes = require('./routes/notes.routes');
 
@@ -13,6 +15,12 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve frontend
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Auth routes (before auth middleware)
+app.use('/api/auth', authRoutes);
+
+// Auth middleware — protects all /api/ routes below
+app.use(authMiddleware);
 
 // API Routes
 app.use('/api/projects', projectRoutes);

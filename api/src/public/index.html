@@ -10,85 +10,139 @@
 </head>
 
 <body>
-    <!-- TOP TOOLBAR -->
-    <div class="toolbar">
-        <span class="toolbar-title">📁 BaysWorld v2.0 — Developer Hub</span>
-        <span class="toolbar-right">
-            <span id="clock"></span>
-        </span>
+    <!-- LOGIN SCREEN (hidden by default, shown when user clicks Login) -->
+    <div class="login-screen" id="loginScreen" style="display:none;">
+        <div class="win-window login-window">
+            <div class="win-title-bar">
+                <span>🔐 BaysWorld — Administrator Login</span>
+                <button class="title-close-btn" onclick="hideLogin()">✕</button>
+            </div>
+            <div class="win-body">
+                <div style="text-align:center;margin-bottom:10px;">
+                    <div style="font-size:36px;">🖥️</div>
+                    <b>BaysWorld v2.0</b>
+                    <p style="font-size:10px;color:#808080;">Enter admin credentials to manage content</p>
+                </div>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label class="form-label">👤 Username</label>
+                        <input class="form-input" id="loginUser" name="username" autocomplete="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">🔑 Password</label>
+                        <input class="form-input" id="loginPass" name="password" type="password"
+                            autocomplete="current-password" required>
+                    </div>
+                    <div id="loginError" class="login-error" style="display:none;"></div>
+                    <div class="form-actions" style="justify-content:center;">
+                        <button type="button" class="win-btn" onclick="hideLogin()">Cancel</button>
+                        <button type="submit" class="win-btn win-btn-primary" id="loginBtn">Log In</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
-    <!-- MAIN LAYOUT: Sidebar + Content -->
-    <div class="layout">
+    <!-- APP (always visible) -->
+    <div class="app-wrapper" id="appWrapper">
 
-        <!-- SIDEBAR (Explorer Panel) -->
-        <div class="sidebar" id="sidebar">
-            <div class="sidebar-title-bar">
-                <span>Navigation</span>
-                <span class="title-btn">_</span>
-            </div>
-            <div class="sidebar-body">
-                <div class="tree-section">
-                    <div class="tree-header">📂 Main Menu</div>
-                    <a href="#/" class="tree-item active" data-route="/">
-                        <img src="data:image/gif;base64,R0lGODlhEAAQAPcAAP///8zM/5mZ/2Zm/zMz/wAA/wAAzAAAmQAAZgAAMwAAAP//AP/MAP/MAP+ZAP9mAP8zAP8AAMwAAJkAAGYAADMAAAAA///M/8zM/5nM/2bM/zPM/wDM/wDMAACZAACZAABmAAAzAAAA/8z/zMz/zJn/zGb/zDP/zAD/zADMzACZmQBmZgAzMwAAAMzMzMzMzJmZzGZmzDMzzAAA/wAAzAAAmQAAZgAAMwAAAAD/zADMzACZzABmzAAzzAAA/wAAzAAAmQAAZgAAMwAAAADMAADMAADMAADMAADMAADMAAAAAAAAAAAAAAAAAAAAAAAA/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAEAAAAALAAAAAAQABAAAAhFAAEIHEiwoMGDCBMqXMiwocOHDwlInEixokWBFzNq3MhRYsePIEOKHJlxJMmTBk2iTKmSJEmWMGPKVBmz5s2UNnPe3BkQADs="
-                            alt="">
-                        Dashboard
-                    </a>
-                    <a href="#/projects" class="tree-item" data-route="/projects">
-                        <img src="data:image/gif;base64,R0lGODlhEAAQAPcAAP///8zMzJmZmWZmZjMzMwAAAP/MzP+Zmf9mZv8zM/8AAMz/zMyZzMxmzMwzzMwAzJn/zJmZzJlmzJkzzJkAzGb/zGaZzGZmzGYzzGYAzDP/zDOZzDNmzDMzzDMAzAD/zACZzABmzAAzzAAAzP//mf/Mmf+Zmf9mmf8zmf8Amcz/mczMmcyZmcxmmcwzmcwAmZn/mZnMmZmZmZlmmZkzmZkAmWb/mWbMmWaZmWZmmWYzmWYAmTP/mTPMmTOZmTNmmTMzmTMAmQD/mQDMmQCZmQBmmQAzmQAAmf//Zv/MZv+ZZv9mZv8zZv8AZsz/ZszMZsyZZsxmZswzZswAZpn/ZpnMZpmZZplmZpkzZpkAZmb/ZmbMZmaZZmZmZmYzZmYAZjP/ZjPMZjOZZjNmZjMzZjMAZgD/ZgDMZgCZZgBmZgAzZgAAZv//M//MM/+ZM/9mM/8zM/8AM8z/M8zMM8yZM8xmM8wzM8wAM5n/M5nMM5mZM5lmM5kzM5kAM2b/M2bMM2aZM2ZmM2YzM2YAMzP/MzPMMzOZMzNmMzMzMzMAMwD/MwDMMwCZMwBmMwAzMwAAM///AP/MAP+ZAP9mAP8zAP8AAMz/AMzMAMyZAMxmAMwzAMwAAJn/AJnMAJmZAJlmAJkzAJkAAGb/AGbMAGaZAGZmAGYzAGYAADP/ADPMADOZADNmADMzADMAAP8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAEAAP8ALAAAAAAQABAAAAhUAP8JHEiwoEGBAgYoXFigocOHECNKnGgQosWLGC1q3MhxI8ePIEF6HEmypEmOKFOqRMmypcuPMGPKhEmzps2XOHPq1Mmzp0+dQIMKDUq0qNGhAQEAOw=="
-                            alt="">
-                        Projects
-                    </a>
-                    <a href="#/notes" class="tree-item" data-route="/notes">
-                        <img src="data:image/gif;base64,R0lGODlhEAAQAPcAAP///8zMzJmZmWZmZjMzMwAAAP//zP/MzP+ZzP9mzP8zzP8AzMz/zMzMzMyZzMxmzMwzzMwAzJn/zJnMzJmZzJlmzJkzzJkAzGb/zGbMzGaZzGZmzGYzzGYAzDP/zDPMzDOZzDNmzDMzzDMAzAD/zADMzACZzABmzAAzzAAAzP//mf/Mmf+Zmf9mmf8zmf8Amcz/mczMmcyZmcxmmcwzmcwAmZn/mZnMmZmZmZlmmZkzmZkAmWb/mWbMmWaZmWZmmWYzmWYAmTP/mTPMmTOZmTNmmTMzmTMAmQD/mQDMmQCZmQBmmQAzmQAAmf//Zv/MZv+ZZv9mZv8zZv8AZsz/ZszMZsyZZsxmZswzZswAZpn/ZpnMZpmZZplmZpkzZpkAZmb/ZmbMZmaZZmZmZmYzZmYAZjP/ZjPMZjOZZjNmZjMzZjMAZgD/ZgDMZgCZZgBmZgAzZgAAZv//M//MM/+ZM/9mM/8zM/8AM8z/M8zMM8yZM8xmM8wzM8wAM5n/M5nMM5mZM5lmM5kzM5kAM2b/M2bMM2aZM2ZmM2YzM2YAMzP/MzPMMzOZMzNmMzMzMzMAMwD/MwDMMwCZMwBmMwAzMwAAM///AP/MAP+ZAP9mAP8zAP8AAMz/AMzMAMyZAMxmAMwzAMwAAJn/AJnMAJmZAJlmAJkzAJkAAGb/AGbMAGaZAGZmAGYzAGYAADP/ADPMADOZADNmADMzADMAAP8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAEAAP8ALAAAAAAQABAAAAg/AP8JHEiwoMGDCBMqXHjQocOHEB1KnEixosWEGDNqzMixo8ePFUOKHBmypMmTKEuqXMlS5cqXMGO+nEmzJsKAADs="
-                            alt="">
-                        Notes
-                    </a>
+        <!-- TOP TOOLBAR -->
+        <div class="toolbar">
+            <span class="toolbar-title">📁 BaysWorld v2.0 — Developer Hub</span>
+            <span class="toolbar-right">
+                <!-- Shown when logged in -->
+                <span id="adminControls" style="display:none;">
+                    <span id="adminUser" style="margin-right:8px;"></span>
+                    <button class="win-btn btn-sm" id="logoutBtn" title="Log Out">🚪 Logout</button>
+                </span>
+                <!-- Shown when not logged in -->
+                <span id="guestControls">
+                    <button class="win-btn btn-sm" id="loginTrigger" title="Admin Login">🔐 Admin</button>
+                </span>
+                <span style="margin-left:8px;" id="clock"></span>
+            </span>
+        </div>
+
+        <!-- MAIN LAYOUT: Sidebar + Content -->
+        <div class="layout">
+
+            <!-- SIDEBAR (Explorer Panel) -->
+            <div class="sidebar" id="sidebar">
+                <div class="sidebar-title-bar">
+                    <span>Navigation</span>
+                    <span class="title-btn">_</span>
                 </div>
+                <div class="sidebar-body">
+                    <div class="tree-section">
+                        <div class="tree-header">📂 Main Menu</div>
+                        <a href="#/" class="tree-item active" data-route="/">
+                            <img src="data:image/gif;base64,R0lGODlhEAAQAPcAAP///8zM/5mZ/2Zm/zMz/wAA/wAAzAAAmQAAZgAAMwAAAP//AP/MAP/MAP+ZAP9mAP8zAP8AAMwAAJkAAGYAADMAAAAA///M/8zM/5nM/2bM/zPM/wDM/wDMAACZAACZAABmAAAzAAAA/8z/zMz/zJn/zGb/zDP/zAD/zADMzACZmQBmZgAzMwAAAMzMzMzMzJmZzGZmzDMzzAAA/wAAzAAAmQAAZgAAMwAAAAD/zADMzACZzABmzAAzzAAA/wAAzAAAmQAAZgAAMwAAAADMAADMAADMAADMAADMAADMAAAAAAAAAAAAAAAAAAAAAAAA/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAEAAAAALAAAAAAQABAAAAhFAAEIHEiwoMGDCBMqXMiwocOHDwlInEixokWBFzNq3MhRYsePIEOKHJlxJMmTBk2iTKmSJEmWMGPKVBmz5s2UNnPe3BkQADs="
+                                alt="">
+                            Dashboard
+                        </a>
+                        <a href="#/projects" class="tree-item" data-route="/projects">
+                            <img src="data:image/gif;base64,R0lGODlhEAAQAPcAAP///8zMzJmZmWZmZjMzMwAAAP/MzP+Zmf9mZv8zM/8AAMz/zMyZzMxmzMwzzMwAzJn/zJmZzJlmzJkzzJkAzGb/zGaZzGZmzGYzzGYAzDP/zDOZzDNmzDMzzDMAzAD/zACZzABmzAAzzAAAzP//mf/Mmf+Zmf9mmf8zmf8Amcz/mczMmcyZmcxmmcwzmcwAmZn/mZnMmZmZmZlmmZkzmZkAmWb/mWbMmWaZmWZmmWYzmWYAmTP/mTPMmTOZmTNmmTMzmTMAmQD/mQDMmQCZmQBmmQAzmQAAmf//Zv/MZv+ZZv9mZv8zZv8AZsz/ZszMZsyZZsxmZswzZswAZpn/ZpnMZpmZZplmZpkzZpkAZmb/ZmbMZmaZZmZmZmYzZmYAZjP/ZjPMZjOZZjNmZjMzZjMAZgD/ZgDMZgCZZgBmZgAzZgAAZv//M//MM/+ZM/9mM/8zM/8AM8z/M8zMM8yZM8xmM8wzM8wAM5n/M5nMM5mZM5lmM5kzM5kAM2b/M2bMM2aZM2ZmM2YzM2YAMzP/MzPMMzOZMzNmMzMzMzMAMwD/MwDMMwCZMwBmMwAzMwAAM///AP/MAP+ZAP9mAP8zAP8AAMz/AMzMAMyZAMxmAMwzAMwAAJn/AJnMAJmZAJlmAJkzAJkAAGb/AGbMAGaZAGZmAGYzAGYAADP/ADPMADOZADNmADMzADMAAP8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAEAAP8ALAAAAAAQABAAAAhUAP8JHEiwoEGBAgYoXFigocOHECNKnGgQosWLGC1q3MhxI8ePIEF6HEmypEmOKFOqRMmypcuPMGPKhEmzps2XOHPq1Mmzp0+dQIMKDUq0qNGhAQEAOw=="
+                                alt="">
+                            Projects
+                        </a>
+                        <a href="#/notes" class="tree-item" data-route="/notes">
+                            <img src="data:image/gif;base64,R0lGODlhEAAQAPcAAP///8zMzJmZmWZmZjMzMwAAAP//zP/MzP+ZzP9mzP8zzP8AzMz/zMzMzMyZzMxmzMwzzMwAzJn/zJnMzJmZzJlmzJkzzJkAzGb/zGbMzGaZzGZmzGYzzGYAzDP/zDPMzDOZzDNmzDMzzDMAzAD/zADMzACZzABmzAAzzAAAzP//mf/Mmf+Zmf9mmf8zmf8Amcz/mczMmcyZmcxmmcwzmcwAmZn/mZnMmZmZmZlmmZkzmZkAmWb/mWbMmWaZmWZmmWYzmWYAmTP/mTPMmTOZmTNmmTMzmTMAmQD/mQDMmQCZmQBmmQAzmQAAmf//Zv/MZv+ZZv9mZv8zZv8AZsz/ZszMZsyZZsxmZswzZswAZpn/ZpnMZpmZZplmZpkzZpkAZmb/ZmbMZmaZZmZmZmYzZmYAZjP/ZjPMZjOZZjNmZjMzZjMAZgD/ZgDMZgCZZgBmZgAzZgAAZv//M//MM/+ZM/9mM/8zM/8AM8z/M8zMM8yZM8xmM8wzM8wAM5n/M5nMM5mZM5lmM5kzM5kAM2b/M2bMM2aZM2ZmM2YzM2YAMzP/MzPMMzOZMzNmMzMzMzMAMwD/MwDMMwCZMwBmMwAzMwAAM///AP/MAP+ZAP9mAP8zAP8AAMz/AMzMAMyZAMxmAMwzAMwAAJn/AJnMAJmZAJlmAJkzAJkAAGb/AGbMAGaZAGZmAGYzAGYAADP/ADPMADOZADNmADMzADMAAP8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAEAAP8ALAAAAAAQABAAAAg/AP8JHEiwoMGDCBMqXHjQocOHEB1KnEixosWEGDNqzMixo8ePFUOKHBmypMmTKEuqXMlS5cqXMGO+nEmzJsKAADs="
+                                alt="">
+                            Notes
+                        </a>
+                    </div>
 
-                <div class="tree-section">
-                    <div class="tree-header">📂 Categories</div>
-                    <div id="categoryLinks"></div>
-                </div>
+                    <div class="tree-section">
+                        <div class="tree-header">📂 Categories</div>
+                        <div id="categoryLinks"></div>
+                    </div>
 
-                <div class="sidebar-status">
-                    <div id="apiStatus">
-                        <span class="status-led offline"></span> Checking...
+                    <!-- Admin section: only visible when logged in -->
+                    <div class="tree-section admin-only" style="display:none;">
+                        <div class="tree-header">⚙️ Admin</div>
+                        <a href="#" class="tree-item" onclick="showChangePasswordForm(); return false;">
+                            🔑 Change Password
+                        </a>
+                    </div>
+
+                    <div class="sidebar-status">
+                        <div id="apiStatus">
+                            <span class="status-led offline"></span> Checking...
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- MAIN CONTENT -->
-        <div class="main-panel">
-            <!-- Address Bar -->
-            <div class="address-bar">
-                <span class="address-label">Address</span>
-                <div class="address-input" id="addressBar">http://localhost:3000/</div>
-                <button class="win-btn btn-sm" id="mobileMenuBtn" style="display:none;">☰</button>
-            </div>
+            <!-- MAIN CONTENT -->
+            <div class="main-panel">
+                <!-- Address Bar -->
+                <div class="address-bar">
+                    <span class="address-label">Address</span>
+                    <div class="address-input" id="addressBar">http://localhost:3000/</div>
+                    <button class="win-btn btn-sm" id="mobileMenuBtn" style="display:none;">☰</button>
+                </div>
 
-            <!-- Action Bar -->
-            <div class="action-bar">
-                <button class="win-btn" id="quickAddBtn">📄 New</button>
-                <span class="separator">|</span>
-                <input type="text" class="search-input" id="globalSearch" placeholder="🔍 Search...">
-            </div>
+                <!-- Action Bar (admin only parts hidden for guests) -->
+                <div class="action-bar">
+                    <button class="win-btn admin-only" id="quickAddBtn" style="display:none;">📄 New</button>
+                    <span class="separator admin-only" style="display:none;">|</span>
+                    <input type="text" class="search-input" id="globalSearch" placeholder="🔍 Search...">
+                </div>
 
-            <!-- Content Area -->
-            <div class="content-area" id="contentArea">
-                <!-- Dynamic content goes here -->
-            </div>
+                <!-- Content Area -->
+                <div class="content-area" id="contentArea">
+                    <!-- Dynamic content goes here -->
+                </div>
 
-            <!-- Status Bar -->
-            <div class="status-bar">
-                <span id="statusText">Ready</span>
-                <span class="status-sep">|</span>
-                <span>User: Developer</span>
-                <span class="status-sep">|</span>
-                <span>v2.0.0</span>
-                <span style="margin-left:auto;">© 2026 BaysWorld Inc.</span>
+                <!-- Status Bar -->
+                <div class="status-bar">
+                    <span id="statusText">Ready</span>
+                    <span class="status-sep">|</span>
+                    <span id="statusUser">Visitor: Guest</span>
+                    <span class="status-sep">|</span>
+                    <span>v2.0.0</span>
+                    <span style="margin-left:auto;">© 2026 BaysWorld Inc.</span>
+                </div>
             </div>
         </div>
     </div>
