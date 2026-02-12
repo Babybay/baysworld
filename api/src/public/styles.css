@@ -1310,3 +1310,17 @@ a:hover {
     vertical-align: text-bottom;
     display: inline-block;
 }
+
+/* Auth tabs */
+.auth-tabs .win-btn.active {
+    background: var(--win-white);
+    border-bottom: 2px solid var(--title-blue);
+    font-weight: bold;
+}
+
+.form-hint {
+    display: block;
+    font-size: 9px;
+    color: #808080;
+    margin-top: 2px;
+}

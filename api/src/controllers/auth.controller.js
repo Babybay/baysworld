@@ -2,6 +2,7 @@ const {
     getAdmin, getAdminByUsername, createAdmin, saveAdmin, getAllAdmins,
     verifyPassword, hashPassword, generateToken, verifyToken, verifyVipKey,
 } = require('../services/auth.service');
+const LogService = require('../services/log.service');
 
 // POST /api/auth/login
 exports.login = async (req, res) => {
@@ -22,6 +23,10 @@ exports.login = async (req, res) => {
         }
 
         const token = generateToken(admin.username);
+
+        await LogService.log('login', 'admin', String(admin.id), admin.username,
+            admin.username, 'Admin logged in', req.ip);
+
         res.json({ token, username: admin.username, message: 'Login successful!' });
     } catch (err) {
         console.error('Login error:', err);
@@ -62,6 +67,10 @@ exports.register = async (req, res) => {
 
         const admin = await createAdmin(username, password);
         const token = generateToken(admin.username);
+
+        await LogService.log('register', 'admin', String(admin.id), admin.username,
+            admin.username, 'New admin registered', req.ip);
+
         res.status(201).json({ token, username: admin.username, message: 'Admin account created!' });
     } catch (err) {
         console.error('Register error:', err);

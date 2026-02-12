@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- SEO -->
+    <title>
+        <%= title %> — BaysWorld
+    </title>
+    <meta name="description" content="<%= description %>">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="<%= ogType || 'website' %>">
+    <meta property="og:title" content="<%= title %>">
+    <meta property="og:description" content="<%= description %>">
+    <meta property="og:url" content="<%= canonicalUrl %>">
+    <meta property="og:site_name" content="BaysWorld">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="<%= title %>">
+    <meta name="twitter:description" content="<%= description %>">
+
+    <!-- Canonical -->
+    <link rel="canonical" href="<%= canonicalUrl %>">
+    <link rel="icon" type="image/svg+xml" href="/logo.svg">
+
+    <!-- JSON-LD -->
+    <%- jsonLd %>
+
+        <link rel="stylesheet" href="/styles.css">
+        <style>
+            .ssr-page {
+                max-width: 800px;
+                margin: 20px auto;
+                padding: 0 16px;
+                font-family: 'Tahoma', sans-serif;
+            }
+
+            .ssr-page .back-link {
+                display: inline-block;
+                margin-bottom: 12px;
+                color: #0000ff;
+                cursor: pointer;
+                font-size: 12px;
+            }
+
+            .ssr-page .meta-info {
+                font-size: 10px;
+                color: #808080;
+                margin-bottom: 12px;
+            }
+
+            .ssr-page .share-bar {
+                margin: 12px 0;
+                padding: 8px;
+                background: #fffde7;
+                border: 1px solid #e0d080;
+                font-size: 11px;
+                display: flex;
+                gap: 8px;
+                align-items: center;
+            }
+
+            .ssr-page .share-url {
+                flex: 1;
+                padding: 3px 6px;
+                border: 1px inset;
+                background: #fff;
+                font-family: monospace;
+                font-size: 10px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+        </style>
+</head>
+
+<body style="background: #008080; display:flex; justify-content:center; min-height:100vh; padding-top: 30px;">
+    <div class="ssr-page">
+        <div class="win-window" style="max-width:800px;">
+            <div class="win-title-bar"><span>📁 BaysWorld</span></div>
+            <div class="win-body" style="padding:12px;">
+                <a class="back-link" href="/">⬅ Back to BaysWorld</a>
+                <%- body %>
+
+                    <div class="share-bar">
+                        📎 Share this page:
+                        <span class="share-url">
+                            <%= canonicalUrl %>
+                        </span>
+                        <button class="win-btn btn-sm"
+                            onclick="navigator.clipboard.writeText('<%= canonicalUrl %>').then(()=>this.textContent='✓ Copied!').catch(()=>{})">📋
+                            Copy</button>
+                    </div>
+            </div>
+        </div>
+        <p style="text-align:center; margin-top:12px; font-size:10px; color: #c0c0c0;">
+            © 2026 BaysWorld — <a href="/" style="color:#c0c0c0;">thebaysworld.xyz</a>
+        </p>
+    </div>
+</body>
+
+</html>

@@ -75,6 +75,7 @@ const API = {
   updateNote(id, d) { return this.request('PUT', '/notes/' + id, d); },
   deleteNote(id) { return this.request('DELETE', '/notes/' + id); },
   getCategories() { return this.request('GET', '/notes/categories'); },
+  getLogs(limit = 50, offset = 0) { return this.request('GET', `/logs?limit=${limit}&offset=${offset}`); },
   health() { return this.request('GET', '/health'); },
 };
 
@@ -151,6 +152,16 @@ function getCatClass(cat) {
 function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
 function setStatus(msg) { const el = document.getElementById('statusText'); if (el) el.textContent = msg; }
 function setAddr(path) { const el = document.getElementById('addressBar'); if (el) el.textContent = 'http://thebaysworld.xyz' + path; }
+const BASE_URL = 'https://thebaysworld.xyz';
+function shareBar(type, slug) {
+  if (!slug) return '';
+  const url = `${BASE_URL}/${type}/${slug}`;
+  return `<div class="share-bar" style="margin:10px 0;padding:6px 10px;background:#fffde7;border:1px solid #e0d080;font-size:11px;display:flex;gap:6px;align-items:center;">
+    📎 Share: <span style="flex:1;padding:2px 6px;border:1px inset;background:#fff;font-family:monospace;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${url}</span>
+    <button class="win-btn btn-sm" onclick="navigator.clipboard.writeText('${url}').then(()=>{this.textContent='✓ Copied!'}).catch(()=>{})">📋 Copy</button>
+    <a class="win-btn btn-sm" href="${url}" target="_blank" style="text-decoration:none;">🔗 Open</a>
+  </div>`;
+}
 
 // ── Toast ──
 function toast(message, type = 'info') {
@@ -462,6 +473,7 @@ async function renderProjectDetail(id) {
           ${p.techStack?.length ? `<fieldset class="groupbox"><legend>Tech Stack</legend>${p.techStack.map(t => `<span class="tech-tag">${esc(t)}</span>`).join(' ')}</fieldset>` : ''}
           ${p.tags?.length ? `<fieldset class="groupbox"><legend>Tags</legend>${p.tags.map(t => `<span class="note-tag">${esc(t)}</span>`).join(' ')}</fieldset>` : ''}
           ${p.notes ? `<fieldset class="groupbox"><legend>Notes</legend><div class="note-content">${parseMarkdown(p.notes)}</div></fieldset>` : ''}
+          ${shareBar('p', p.slug)}
         </div>
       </div>`;
     setStatus('Project loaded');
@@ -536,11 +548,52 @@ async function renderNoteDetail(id) {
           </div>`)}
           <hr class="retro-hr">
           <div class="note-content">${parseMarkdown(n.content)}</div>
+          ${shareBar('n', n.slug)}
         </div>
       </div>`;
     setStatus('Note loaded');
   } catch (err) {
     c.innerHTML = `<div class="empty-state">Note Not Found<br><br><a href="#/notes">Back to Notes</a></div>`;
+  }
+}
+
+// ── Activity Log Viewer (admin only) ──
+async function renderActivityLogs() {
+  const c = document.getElementById('contentArea');
+  if (!isAdmin()) {
+    c.innerHTML = '<div class="empty-state"><div class="empty-icon">🔒</div>Admin login required to view logs.<br><br><a href="#/">Return to Dashboard</a></div>';
+    return;
+  }
+  setStatus('Loading activity logs...');
+  try {
+    const data = await API.getLogs(100, 0);
+    const logs = data.logs || [];
+    const actionIcons = { create: '🆕', update: '✏️', delete: '🗑️', login: '🔐', register: '📝' };
+    c.innerHTML = `
+      <div class="section-header">
+        <span class="section-title">📋 Activity Logs (${data.total || logs.length} total)</span>
+      </div>
+      ${logs.length ? `
+      <table class="data-table">
+        <thead><tr><th style="width:30px;"></th><th>Action</th><th>Entity</th><th>Name</th><th>User</th><th>Details</th><th>Time</th></tr></thead>
+        <tbody>${logs.map(l => `<tr>
+          <td>${actionIcons[l.action] || '📌'}</td>
+          <td><span class="badge badge-${l.action === 'delete' ? 'archived' : l.action === 'create' ? 'active' : 'in-progress'}">${l.action}</span></td>
+          <td>${esc(l.entityType || '')}</td>
+          <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+            ${l.entityType === 'project' && l.entityId ? `<a href="#/projects/${l.entityId}">${esc(l.entityName || '')}</a>` :
+        l.entityType === 'note' && l.entityId ? `<a href="#/notes/${l.entityId}">${esc(l.entityName || '')}</a>` :
+          esc(l.entityName || '')}
+          </td>
+          <td>👤 ${esc(l.username || 'system')}</td>
+          <td style="font-size:10px;color:#808080;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(l.details || '')}</td>
+          <td style="font-size:10px;color:#808080;white-space:nowrap;">${timeAgo(l.createdAt)}</td>
+        </tr>`).join('')}</tbody>
+      </table>` : '<div class="empty-state"><div class="empty-icon">📋</div>No activity logs yet.</div>'}
+    `;
+    setStatus(`${logs.length} log(s) loaded`);
+  } catch (err) {
+    c.innerHTML = `<div class="empty-state">Error loading logs: ${err.message}</div>`;
   }
 }
 
@@ -771,6 +824,9 @@ async function initApp() {
       }).join('');
     }
   } catch { }
+
+  // Activity log route
+  Router.on('/logs', renderActivityLogs);
 
   // Mobile menu
   const mobileBtn = document.getElementById('mobileMenuBtn');

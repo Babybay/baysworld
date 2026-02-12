@@ -1,0 +1,58 @@
+<h2 style="margin-bottom:4px;">
+    <%= project.name %>
+</h2>
+<div class="meta-info">
+    <span class="badge badge-<%= (project.status || 'active').replace(/\s+/g, '-') %>">
+        <%= project.status || 'active' %>
+    </span>
+    · Updated: <%= new Date(project.updatedAt).toLocaleDateString('id-ID', {day:'numeric',month:'short',year:'numeric'})
+        %>
+        · Created: <%= new Date(project.createdAt).toLocaleDateString('id-ID',
+            {day:'numeric',month:'short',year:'numeric'}) %>
+</div>
+
+<% if (project.description) { %>
+    <p style="margin:8px 0; font-size:12px;">
+        <%= project.description %>
+    </p>
+    <% } %>
+
+        <% if (project.techStack && project.techStack.length) { %>
+            <fieldset class="groupbox" style="margin:10px 0;">
+                <legend>Tech Stack</legend>
+                <% project.techStack.forEach(t=> { %>
+                    <span class="tech-tag">
+                        <%= t %>
+                    </span>
+                    <% }) %>
+            </fieldset>
+            <% } %>
+
+                <% if (project.tags && project.tags.length) { %>
+                    <fieldset class="groupbox" style="margin:10px 0;">
+                        <legend>Tags</legend>
+                        <% project.tags.forEach(t=> { %>
+                            <span class="note-tag">
+                                <%= t %>
+                            </span>
+                            <% }) %>
+                    </fieldset>
+                    <% } %>
+
+                        <div style="margin:10px 0; font-size:11px;">
+                            <% if (project.githubUrl) { %>
+                                🔗 <a href="<%= project.githubUrl %>" target="_blank">GitHub Repository</a><br>
+                                <% } %>
+                                    <% if (project.liveUrl) { %>
+                                        🌐 <a href="<%= project.liveUrl %>" target="_blank">Live Demo</a>
+                                        <% } %>
+                        </div>
+
+                        <% if (project.notes) { %>
+                            <fieldset class="groupbox" style="margin:10px 0;">
+                                <legend>Project Notes</legend>
+                                <div class="note-content" style="font-size:12px; white-space:pre-wrap;">
+                                    <%= project.notes %>
+                                </div>
+                            </fieldset>
+                            <% } %>

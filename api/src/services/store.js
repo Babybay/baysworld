@@ -1,8 +1,9 @@
 /**
  * Store module — PostgreSQL-backed CRUD operations.
- * Replaces JSON file storage with database queries.
+ * Supports slug-based lookups and auto-slug generation.
  */
 const pool = require('./db');
+const { slugify } = require('./init-db');
 
 const Store = {
     // ── Projects ────────────────────────────────────────
@@ -38,12 +39,18 @@ const Store = {
         return rows.length ? mapProject(rows[0]) : null;
     },
 
+    async getProjectBySlug(slug) {
+        const { rows } = await pool.query('SELECT * FROM projects WHERE slug = $1', [slug]);
+        return rows.length ? mapProject(rows[0]) : null;
+    },
+
     async createProject(data) {
+        const slug = await generateUniqueSlug('projects', data.name);
         const { rows } = await pool.query(
-            `INSERT INTO projects (name, description, tech_stack, status, github_url, live_url, tags, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            `INSERT INTO projects (name, slug, description, tech_stack, status, github_url, live_url, tags, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
-            [data.name, data.description || '', data.techStack || [], data.status || 'active',
+            [data.name, slug, data.description || '', data.techStack || [], data.status || 'active',
             data.githubUrl || '', data.liveUrl || '', data.tags || [], data.notes || '']
         );
         return mapProject(rows[0]);
@@ -54,7 +61,12 @@ const Store = {
         const params = [];
         let idx = 1;
 
-        if (data.name !== undefined) { fields.push(`name = $${idx++}`); params.push(data.name); }
+        if (data.name !== undefined) {
+            fields.push(`name = $${idx++}`); params.push(data.name);
+            // Regenerate slug when name changes
+            const slug = await generateUniqueSlug('projects', data.name, id);
+            fields.push(`slug = $${idx++}`); params.push(slug);
+        }
         if (data.description !== undefined) { fields.push(`description = $${idx++}`); params.push(data.description); }
         if (data.techStack !== undefined) { fields.push(`tech_stack = $${idx++}`); params.push(data.techStack); }
         if (data.status !== undefined) { fields.push(`status = $${idx++}`); params.push(data.status); }
@@ -111,12 +123,18 @@ const Store = {
         return rows.length ? mapNote(rows[0]) : null;
     },
 
+    async getNoteBySlug(slug) {
+        const { rows } = await pool.query('SELECT * FROM notes WHERE slug = $1', [slug]);
+        return rows.length ? mapNote(rows[0]) : null;
+    },
+
     async createNote(data) {
+        const slug = await generateUniqueSlug('notes', data.title);
         const { rows } = await pool.query(
-            `INSERT INTO notes (title, content, category, tags, pinned)
-       VALUES ($1, $2, $3, $4, $5)
+            `INSERT INTO notes (title, slug, content, category, tags, pinned)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-            [data.title, data.content || '', data.category || 'General',
+            [data.title, slug, data.content || '', data.category || 'General',
             data.tags || [], data.pinned || false]
         );
         return mapNote(rows[0]);
@@ -127,7 +145,11 @@ const Store = {
         const params = [];
         let idx = 1;
 
-        if (data.title !== undefined) { fields.push(`title = $${idx++}`); params.push(data.title); }
+        if (data.title !== undefined) {
+            fields.push(`title = $${idx++}`); params.push(data.title);
+            const slug = await generateUniqueSlug('notes', data.title, id);
+            fields.push(`slug = $${idx++}`); params.push(slug);
+        }
         if (data.content !== undefined) { fields.push(`content = $${idx++}`); params.push(data.content); }
         if (data.category !== undefined) { fields.push(`category = $${idx++}`); params.push(data.category); }
         if (data.tags !== undefined) { fields.push(`tags = $${idx++}`); params.push(data.tags); }
@@ -156,12 +178,34 @@ const Store = {
     },
 };
 
+// ── Slug generator ──
+
+async function generateUniqueSlug(table, text, excludeId = null) {
+    const base = slugify(text);
+    let candidate = base;
+    let counter = 0;
+    while (true) {
+        let query = `SELECT id FROM ${table} WHERE slug = $1`;
+        const params = [candidate];
+        if (excludeId) {
+            query += ' AND id != $2';
+            params.push(excludeId);
+        }
+        query += ' LIMIT 1';
+        const { rows } = await pool.query(query, params);
+        if (!rows.length) return candidate;
+        counter++;
+        candidate = `${base}-${counter}`;
+    }
+}
+
 // ── Mappers: snake_case → camelCase ──
 
 function mapProject(row) {
     return {
         id: row.id,
         name: row.name,
+        slug: row.slug,
         description: row.description,
         techStack: row.tech_stack || [],
         status: row.status,
@@ -178,6 +222,7 @@ function mapNote(row) {
     return {
         id: row.id,
         title: row.title,
+        slug: row.slug,
         content: row.content,
         category: row.category,
         tags: row.tags || [],

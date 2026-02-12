@@ -1,4 +1,5 @@
 const Store = require('../services/store');
+const LogService = require('../services/log.service');
 
 exports.getAll = async (req, res) => {
     try {
@@ -34,6 +35,11 @@ exports.create = async (req, res) => {
         const project = await Store.createProject({
             name: name.trim(), description, techStack, status, githubUrl, liveUrl, tags, notes,
         });
+
+        // Log activity
+        await LogService.log('create', 'project', project.id, project.name,
+            req.user?.username || 'system', `Created project "${project.name}"`, req.ip);
+
         res.status(201).json(project);
     } catch (err) {
         console.error('Error creating project:', err);
@@ -45,6 +51,10 @@ exports.update = async (req, res) => {
     try {
         const updated = await Store.updateProject(req.params.id, req.body);
         if (!updated) return res.status(404).json({ error: 'Project not found' });
+
+        await LogService.log('update', 'project', updated.id, updated.name,
+            req.user?.username || 'system', `Updated project "${updated.name}"`, req.ip);
+
         res.json(updated);
     } catch (err) {
         console.error('Error updating project:', err);
@@ -54,8 +64,14 @@ exports.update = async (req, res) => {
 
 exports.remove = async (req, res) => {
     try {
+        // Get project name before deleting
+        const project = await Store.getProject(req.params.id);
         const deleted = await Store.deleteProject(req.params.id);
         if (!deleted) return res.status(404).json({ error: 'Project not found' });
+
+        await LogService.log('delete', 'project', req.params.id, project?.name || 'Unknown',
+            req.user?.username || 'system', `Deleted project`, req.ip);
+
         res.json({ message: 'Project deleted' });
     } catch (err) {
         console.error('Error deleting project:', err);

@@ -1,4 +1,5 @@
 const Store = require('../services/store');
+const LogService = require('../services/log.service');
 
 exports.getAll = async (req, res) => {
     try {
@@ -34,6 +35,10 @@ exports.create = async (req, res) => {
         const note = await Store.createNote({
             title: title.trim(), content, category, tags, pinned,
         });
+
+        await LogService.log('create', 'note', note.id, note.title,
+            req.user?.username || 'system', `Created note "${note.title}"`, req.ip);
+
         res.status(201).json(note);
     } catch (err) {
         console.error('Error creating note:', err);
@@ -45,6 +50,10 @@ exports.update = async (req, res) => {
     try {
         const updated = await Store.updateNote(req.params.id, req.body);
         if (!updated) return res.status(404).json({ error: 'Note not found' });
+
+        await LogService.log('update', 'note', updated.id, updated.title,
+            req.user?.username || 'system', `Updated note "${updated.title}"`, req.ip);
+
         res.json(updated);
     } catch (err) {
         console.error('Error updating note:', err);
@@ -54,8 +63,13 @@ exports.update = async (req, res) => {
 
 exports.remove = async (req, res) => {
     try {
+        const note = await Store.getNote(req.params.id);
         const deleted = await Store.deleteNote(req.params.id);
         if (!deleted) return res.status(404).json({ error: 'Note not found' });
+
+        await LogService.log('delete', 'note', req.params.id, note?.title || 'Unknown',
+            req.user?.username || 'system', `Deleted note`, req.ip);
+
         res.json({ message: 'Note deleted' });
     } catch (err) {
         console.error('Error deleting note:', err);

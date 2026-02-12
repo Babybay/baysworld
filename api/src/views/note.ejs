@@ -1,0 +1,26 @@
+<h2 style="margin-bottom:4px;">
+    <%= note.pinned ? '📌 ' : '' %>
+        <%= note.title %>
+</h2>
+<div class="meta-info">
+    <span class="cat-tag">
+        <%= note.category || 'General' %>
+    </span>
+    <% if (note.tags && note.tags.length) { %>
+        · <% note.tags.forEach(t=> { %><span class="note-tag">
+                <%= t %>
+            </span>
+            <% }) %>
+                <% } %>
+                    <br>
+                    Updated: <%= new Date(note.updatedAt).toLocaleDateString('id-ID',
+                        {day:'numeric',month:'short',year:'numeric'}) %>
+                        · Created: <%= new Date(note.createdAt).toLocaleDateString('id-ID',
+                            {day:'numeric',month:'short',year:'numeric'}) %>
+</div>
+
+<hr class="retro-hr" style="margin:10px 0;">
+
+<div class="note-content" style="font-size:12px; line-height:1.7; white-space:pre-wrap;">
+    <%= note.content %>
+</div>
