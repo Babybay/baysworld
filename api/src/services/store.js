@@ -47,11 +47,12 @@ const Store = {
     async createProject(data) {
         const slug = await generateUniqueSlug('projects', data.name);
         const { rows } = await pool.query(
-            `INSERT INTO projects (name, slug, description, tech_stack, status, github_url, live_url, tags, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            `INSERT INTO projects (name, slug, description, tech_stack, status, github_url, live_url, tags, notes, thumbnail, images)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *`,
             [data.name, slug, data.description || '', data.techStack || [], data.status || 'active',
-            data.githubUrl || '', data.liveUrl || '', data.tags || [], data.notes || '']
+            data.githubUrl || '', data.liveUrl || '', data.tags || [], data.notes || '',
+            data.thumbnail || '', data.images || []]
         );
         return mapProject(rows[0]);
     },
@@ -74,6 +75,8 @@ const Store = {
         if (data.liveUrl !== undefined) { fields.push(`live_url = $${idx++}`); params.push(data.liveUrl); }
         if (data.tags !== undefined) { fields.push(`tags = $${idx++}`); params.push(data.tags); }
         if (data.notes !== undefined) { fields.push(`notes = $${idx++}`); params.push(data.notes); }
+        if (data.thumbnail !== undefined) { fields.push(`thumbnail = $${idx++}`); params.push(data.thumbnail); }
+        if (data.images !== undefined) { fields.push(`images = $${idx++}`); params.push(data.images); }
 
         fields.push(`updated_at = NOW()`);
         params.push(id);
@@ -88,6 +91,29 @@ const Store = {
     async deleteProject(id) {
         const { rowCount } = await pool.query('DELETE FROM projects WHERE id = $1', [id]);
         return rowCount > 0;
+    },
+
+    // ── Media helpers ────────────────────────────────────
+
+    async addProjectImage(id, url) {
+        await pool.query(
+            'UPDATE projects SET images = array_append(images, $1), updated_at = NOW() WHERE id = $2',
+            [url, id]
+        );
+    },
+
+    async removeProjectImage(id, url) {
+        await pool.query(
+            'UPDATE projects SET images = array_remove(images, $1), updated_at = NOW() WHERE id = $2',
+            [url, id]
+        );
+    },
+
+    async setProjectThumbnail(id, url) {
+        await pool.query(
+            'UPDATE projects SET thumbnail = $1, updated_at = NOW() WHERE id = $2',
+            [url, id]
+        );
     },
 
     // ── Notes ───────────────────────────────────────────
@@ -213,6 +239,8 @@ function mapProject(row) {
         liveUrl: row.live_url,
         tags: row.tags || [],
         notes: row.notes,
+        thumbnail: row.thumbnail || '',
+        images: row.images || [],
         createdAt: row.created_at,
         updatedAt: row.updated_at,
     };

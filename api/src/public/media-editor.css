@@ -1,0 +1,335 @@
+/* ══════════════════════════════════════════════════════════
+   DRAG & DROP UPLOAD ZONE
+   ══════════════════════════════════════════════════════════ */
+.drop-zone {
+    border: 2px dashed var(--win-dark);
+    background: #f8f8f8;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+    min-height: 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.drop-zone:hover {
+    border-color: var(--title-blue);
+    background: #f0f0ff;
+}
+
+.drop-zone.dragover {
+    border-color: var(--status-green);
+    background: #e8ffe8;
+    border-style: solid;
+    box-shadow: inset 0 0 10px rgba(0, 128, 0, 0.1);
+}
+
+.drop-zone-icon {
+    font-size: 28px;
+    line-height: 1;
+}
+
+.drop-zone-label {
+    font-size: 11px;
+    color: var(--win-darker);
+}
+
+.drop-zone-hint {
+    font-size: 9px;
+    color: var(--win-dark);
+}
+
+.drop-zone input[type="file"] {
+    display: none;
+}
+
+.drop-zone-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: var(--title-blue);
+    transition: width 0.3s;
+}
+
+/* ── Media Preview Grid ── */
+.media-preview-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.media-preview-item {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    border: 2px inset;
+    overflow: hidden;
+    background: var(--win-bg);
+}
+
+.media-preview-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.media-preview-delete {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: rgba(192, 0, 0, 0.85);
+    color: #fff;
+    border: none;
+    font-size: 10px;
+    width: 16px;
+    height: 16px;
+    line-height: 16px;
+    text-align: center;
+    cursor: pointer;
+    padding: 0;
+}
+
+.media-preview-delete:hover {
+    background: #ff0000;
+}
+
+/* ── Thumbnail display ── */
+.project-thumbnail {
+    border: 2px inset;
+    max-width: 100%;
+    max-height: 300px;
+    object-fit: cover;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.thumbnail-small {
+    width: 40px;
+    height: 30px;
+    object-fit: cover;
+    border: 1px solid var(--win-dark);
+    vertical-align: middle;
+    margin-right: 6px;
+}
+
+/* ── Media Gallery in Detail View ── */
+.media-gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.media-gallery-item {
+    border: 2px inset;
+    overflow: hidden;
+    cursor: pointer;
+    transition: box-shadow 0.15s;
+}
+
+.media-gallery-item:hover {
+    box-shadow: 0 0 0 2px var(--title-blue);
+}
+
+.media-gallery-item img {
+    width: 150px;
+    height: 120px;
+    object-fit: cover;
+    display: block;
+}
+
+/* ── Image Lightbox ── */
+.lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.lightbox img {
+    max-width: 90vw;
+    max-height: 90vh;
+    border: 3px solid var(--win-white);
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+}
+
+/* ══════════════════════════════════════════════════════════
+   EASYMDE RETRO OVERRIDES
+   ══════════════════════════════════════════════════════════ */
+.EasyMDEContainer {
+    font-family: var(--font-main) !important;
+}
+
+.EasyMDEContainer .CodeMirror {
+    border: 2px inset !important;
+    background: var(--input-bg) !important;
+    font-family: var(--font-mono) !important;
+    font-size: 12px !important;
+    color: var(--win-black) !important;
+    min-height: 200px;
+}
+
+.EasyMDEContainer .CodeMirror-focused {
+    background: #fffff0 !important;
+}
+
+.EasyMDEContainer .editor-toolbar {
+    background: var(--win-bg) !important;
+    border-top: 2px solid var(--win-white) !important;
+    border-left: 2px solid var(--win-white) !important;
+    border-right: 2px solid var(--win-dark) !important;
+    border-bottom: 2px solid var(--win-dark) !important;
+    padding: 2px 4px !important;
+    opacity: 1 !important;
+}
+
+.EasyMDEContainer .editor-toolbar button {
+    color: var(--win-black) !important;
+    border: 1px solid transparent !important;
+    width: 26px !important;
+    height: 26px !important;
+}
+
+.EasyMDEContainer .editor-toolbar button:hover {
+    background: var(--win-white) !important;
+    border-top: 1px solid var(--win-white) !important;
+    border-left: 1px solid var(--win-white) !important;
+    border-right: 1px solid var(--win-dark) !important;
+    border-bottom: 1px solid var(--win-dark) !important;
+}
+
+.EasyMDEContainer .editor-toolbar button.active {
+    background: var(--win-bg-light) !important;
+    border-top: 1px solid var(--win-dark) !important;
+    border-left: 1px solid var(--win-dark) !important;
+    border-right: 1px solid var(--win-white) !important;
+    border-bottom: 1px solid var(--win-white) !important;
+}
+
+.EasyMDEContainer .editor-toolbar i.separator {
+    border-left: 1px solid var(--win-dark) !important;
+    border-right: 1px solid var(--win-white) !important;
+}
+
+.EasyMDEContainer .editor-preview {
+    background: var(--content-bg) !important;
+    font-family: var(--font-main) !important;
+    font-size: 11px !important;
+    padding: 10px !important;
+}
+
+.EasyMDEContainer .editor-preview pre {
+    background: #1e1e1e !important;
+    padding: 8px !important;
+    border: 2px inset !important;
+    overflow-x: auto;
+}
+
+.EasyMDEContainer .editor-preview pre code {
+    color: #d4d4d4 !important;
+    font-family: var(--font-mono) !important;
+    font-size: 11px !important;
+}
+
+.EasyMDEContainer .editor-statusbar {
+    font-family: var(--font-main) !important;
+    font-size: 10px !important;
+    color: var(--win-dark) !important;
+    padding: 2px 6px !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   CODE BLOCK HIGHLIGHTING
+   ══════════════════════════════════════════════════════════ */
+.note-content pre {
+    background: #1e1e1e;
+    border: 2px inset;
+    padding: 10px;
+    margin: 8px 0;
+    overflow-x: auto;
+    line-height: 1.5;
+}
+
+.note-content pre code {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: #d4d4d4;
+    background: transparent !important;
+    padding: 0 !important;
+    border: none !important;
+}
+
+.note-content code {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    background: #e8e8e8;
+    border: 1px solid #ccc;
+    padding: 1px 4px;
+}
+
+/* ── Markdown table ── */
+.note-content table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 8px 0;
+    font-size: 11px;
+}
+
+.note-content table th {
+    background: var(--table-header);
+    border: 1px solid var(--win-dark);
+    padding: 3px 8px;
+    text-align: left;
+    font-weight: bold;
+}
+
+.note-content table td {
+    border: 1px solid #ccc;
+    padding: 3px 8px;
+}
+
+/* ── Task list ── */
+.note-content .task-list {
+    list-style: none;
+    padding-left: 4px;
+}
+
+.note-content .task-list li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 0;
+}
+
+/* ── Upload progress bar ── */
+.upload-progress {
+    background: var(--win-bg);
+    border: 2px inset;
+    height: 18px;
+    position: relative;
+    margin-top: 6px;
+}
+
+.upload-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--title-blue), var(--title-blue-light));
+    transition: width 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: bold;
+    color: var(--win-white);
+}

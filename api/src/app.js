@@ -7,6 +7,7 @@ const projectRoutes = require('./routes/projects.routes');
 const noteRoutes = require('./routes/notes.routes');
 const logsRoutes = require('./routes/logs.routes');
 const seoRoutes = require('./routes/seo.routes');
+const mediaRoutes = require('./routes/media.routes');
 
 const app = express();
 
@@ -22,6 +23,9 @@ app.use(express.urlencoded({ extended: true }));
 // Serve frontend
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Serve uploaded media
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+
 // SEO routes — SSR pages (public, before auth middleware)
 app.use(seoRoutes);
 
@@ -34,6 +38,7 @@ app.use(authMiddleware);
 // API Routes
 app.use('/api/projects', projectRoutes);
 app.use('/api/notes', noteRoutes);
+app.use('/api/media', mediaRoutes);
 app.use('/api/logs', logsRoutes);
 
 // API health check

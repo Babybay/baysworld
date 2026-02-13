@@ -77,15 +77,40 @@ const API = {
   getCategories() { return this.request('GET', '/notes/categories'); },
   getLogs(limit = 50, offset = 0) { return this.request('GET', `/logs?limit=${limit}&offset=${offset}`); },
   health() { return this.request('GET', '/health'); },
+  // Media
+  uploadMedia(projectId, formData) {
+    return fetch(`/api/media/upload/${projectId}`, {
+      method: 'POST', headers: Auth.authHeaders(), body: formData,
+    }).then(r => { if (!r.ok) throw new Error('Upload failed'); return r.json(); });
+  },
+  uploadThumbnail(projectId, formData) {
+    return fetch(`/api/media/thumbnail/${projectId}`, {
+      method: 'POST', headers: Auth.authHeaders(), body: formData,
+    }).then(r => { if (!r.ok) throw new Error('Thumbnail upload failed'); return r.json(); });
+  },
+  getMedia(projectId) { return this.request('GET', '/media/' + projectId); },
+  deleteMedia(projectId, filename) { return this.request('DELETE', `/media/${projectId}/${filename}`); },
 };
 
-// ── Markdown Parser ──
+// ── Markdown Parser (enhanced: tables, task lists, images) ──
 function parseMarkdown(md) {
   if (!md) return '';
-  let html = md
+  // Extract tables first
+  let html = md.replace(/^(\|.+\|\r?\n)(\|[\s:|-]+\|\r?\n)((?:\|.+\|\r?\n?)+)/gm, (match) => {
+    const lines = match.trim().split('\n').filter(l => l.trim());
+    if (lines.length < 2) return match;
+    const headers = lines[0].split('|').filter(c => c.trim()).map(c => `<th>${c.trim()}</th>`);
+    const rows = lines.slice(2).map(r => {
+      const cells = r.split('|').filter(c => c.trim()).map(c => `<td>${c.trim()}</td>`);
+      return `<tr>${cells.join('')}</tr>`;
+    });
+    return `<table><thead><tr>${headers.join('')}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
+  });
+  html = html
     .replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) =>
-      `<pre><code class="lang-${lang}">${esc(code.trim())}</code></pre>`)
+      `<pre><code class="lang-${lang || 'plaintext'}">${esc(code.trim())}</code></pre>`)
     .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width:100%;border:2px inset;margin:4px 0;">')
     .replace(/^#### (.+)$/gm, '<h4>$1</h4>')
     .replace(/^### (.+)$/gm, '<h3>$1</h3>')
     .replace(/^## (.+)$/gm, '<h2>$1</h2>')
@@ -96,9 +121,14 @@ function parseMarkdown(md) {
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
     .replace(/^---$/gm, '<hr>')
     .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
+    // Task lists
+    .replace(/^- \[x\] (.+)$/gm, '<li class="task-done"><input type="checkbox" checked disabled> $1</li>')
+    .replace(/^- \[ \] (.+)$/gm, '<li class="task-todo"><input type="checkbox" disabled> $1</li>')
     .replace(/^[\-\*] (.+)$/gm, '<li>$1</li>')
     .replace(/\n\n/g, '</p><p>')
     .replace(/\n/g, '<br>');
+  // Wrap task lists
+  html = html.replace(/((?:<li class="task-(?:done|todo)">.*?<\/li><br>?)+)/g, '<ul class="task-list">$1</ul>');
   html = html.replace(/((?:<li>.*?<\/li><br>?)+)/g, '<ul>$1</ul>');
   html = html.replace(/<br><\/ul>/g, '</ul>');
   html = '<p>' + html + '</p>';
@@ -107,13 +137,88 @@ function parseMarkdown(md) {
   html = html.replace(/(<\/h[1-4]>)<\/p>/g, '$1');
   html = html.replace(/<p>(<pre>)/g, '$1');
   html = html.replace(/(<\/pre>)<\/p>/g, '$1');
-  html = html.replace(/<p>(<ul>)/g, '$1');
+  html = html.replace(/<p>(<ul)/g, '$1');
   html = html.replace(/(<\/ul>)<\/p>/g, '$1');
   html = html.replace(/<p>(<blockquote>)/g, '$1');
   html = html.replace(/(<\/blockquote>)<\/p>/g, '$1');
   html = html.replace(/<p>(<hr>)<\/p>/g, '$1');
+  html = html.replace(/<p>(<table>)/g, '$1');
+  html = html.replace(/(<\/table>)<\/p>/g, '$1');
+  html = html.replace(/<p>(<img )/g, '$1');
   html = html.replace(/<p><br>/g, '<p>');
   return html;
+}
+
+// ── Highlight code blocks after render ──
+function highlightCodeBlocks(container) {
+  if (typeof hljs === 'undefined') return;
+  const el = typeof container === 'string' ? document.querySelector(container) : container;
+  if (!el) return;
+  el.querySelectorAll('pre code').forEach(block => {
+    hljs.highlightElement(block);
+  });
+}
+
+// ── Lightbox for images ──
+function openLightbox(src) {
+  const lb = document.createElement('div');
+  lb.className = 'lightbox';
+  lb.innerHTML = `<img src="${src}">`;
+  lb.onclick = () => lb.remove();
+  document.body.appendChild(lb);
+}
+
+// ── Drag & Drop Upload Zone ──
+function createDropZone(options = {}) {
+  const { accept = 'image/*', multiple = false, label = 'Drag files here or click to browse', icon = '📁', hint = 'Max 10MB per file', onFiles } = options;
+  const id = 'dz_' + Math.random().toString(36).slice(2, 8);
+  const html = `
+    <div class="drop-zone" id="${id}">
+      <div class="drop-zone-icon">${icon}</div>
+      <div class="drop-zone-label">${label}</div>
+      <div class="drop-zone-hint">${hint}</div>
+      <input type="file" accept="${accept}" ${multiple ? 'multiple' : ''}>
+      <div class="drop-zone-progress" style="width:0%;"></div>
+    </div>
+    <div class="media-preview-grid" id="${id}_previews"></div>`;
+
+  // Attach events after DOM insert
+  setTimeout(() => {
+    const zone = document.getElementById(id);
+    if (!zone) return;
+    const input = zone.querySelector('input[type="file"]');
+    zone.addEventListener('click', (e) => { if (e.target === zone || e.target.closest('.drop-zone-icon,.drop-zone-label,.drop-zone-hint')) input.click(); });
+    zone.addEventListener('dragenter', (e) => { e.preventDefault(); zone.classList.add('dragover'); });
+    zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('dragover'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+    zone.addEventListener('drop', (e) => { e.preventDefault(); zone.classList.remove('dragover'); if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files); });
+    input.addEventListener('change', () => { if (input.files.length) handleFiles(input.files); input.value = ''; });
+
+    function handleFiles(files) {
+      const valid = Array.from(files).filter(f => {
+        if (!f.type.startsWith('image/')) { toast('Only images allowed: ' + f.name, 'error'); return false; }
+        if (f.size > 10 * 1024 * 1024) { toast('File too large (max 10MB): ' + f.name, 'error'); return false; }
+        return true;
+      });
+      if (!valid.length) return;
+      // Show previews
+      const grid = document.getElementById(id + '_previews');
+      valid.forEach(f => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const item = document.createElement('div');
+          item.className = 'media-preview-item';
+          item.innerHTML = `<img src="${e.target.result}"><button class="media-preview-delete" title="Remove">×</button>`;
+          item.querySelector('.media-preview-delete').onclick = () => item.remove();
+          grid.appendChild(item);
+        };
+        reader.readAsDataURL(f);
+      });
+      if (onFiles) onFiles(valid);
+    }
+  }, 50);
+
+  return { html, id };
 }
 
 function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
@@ -432,8 +537,9 @@ async function renderProjectsList() {
 }
 
 function projectRow(p) {
+  const thumb = p.thumbnail ? `<img class="thumbnail-small" src="${p.thumbnail}" alt="">` : '';
   return `<tr onclick="Router.navigate('/projects/${p.id}')" style="cursor:pointer;">
-    <td><b>${esc(p.name)}</b></td>
+    <td>${thumb}<b>${esc(p.name)}</b></td>
     <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc((p.description || '').slice(0, 60))}</td>
     <td><span class="badge badge-${(p.status || 'active').replace(/\s+/g, '-')}">${p.status || 'active'}</span></td>
     <td>${(p.techStack || []).slice(0, 4).map(t => `<span class="tech-tag">${esc(t)}</span>`).join(' ')}</td>
@@ -450,11 +556,19 @@ async function renderProjectDetail(id) {
   setStatus('Loading project...');
   try {
     const p = await API.getProject(id);
+    const thumbnailHtml = p.thumbnail ? `<img class="project-thumbnail" src="${p.thumbnail}" alt="${esc(p.name)}" onclick="openLightbox('${p.thumbnail}')">` : '';
+    const galleryHtml = (p.images && p.images.length) ? `
+      <fieldset class="groupbox"><legend>📸 Media Gallery (${p.images.length})</legend>
+        <div class="media-gallery">
+          ${p.images.map(img => `<div class="media-gallery-item" onclick="openLightbox('${img}')"><img src="${img}" alt=""></div>`).join('')}
+        </div>
+      </fieldset>` : '';
     c.innerHTML = `
       <a class="back-link" onclick="history.back()">⬅ Back to Projects</a>
       <div class="win-window">
         <div class="win-title-bar"><span>📁 ${esc(p.name)}</span></div>
         <div class="win-body">
+          ${thumbnailHtml}
           <div style="margin-bottom:8px;">
             <span class="badge badge-${(p.status || 'active').replace(/\s+/g, '-')}">${p.status || 'active'}</span>
             ${p.description ? `<p style="margin-top:6px;">${esc(p.description)}</p>` : ''}
@@ -472,10 +586,12 @@ async function renderProjectDetail(id) {
           </div>
           ${p.techStack?.length ? `<fieldset class="groupbox"><legend>Tech Stack</legend>${p.techStack.map(t => `<span class="tech-tag">${esc(t)}</span>`).join(' ')}</fieldset>` : ''}
           ${p.tags?.length ? `<fieldset class="groupbox"><legend>Tags</legend>${p.tags.map(t => `<span class="note-tag">${esc(t)}</span>`).join(' ')}</fieldset>` : ''}
+          ${galleryHtml}
           ${p.notes ? `<fieldset class="groupbox"><legend>Notes</legend><div class="note-content">${parseMarkdown(p.notes)}</div></fieldset>` : ''}
           ${shareBar('p', p.slug)}
         </div>
       </div>`;
+    highlightCodeBlocks(c);
     setStatus('Project loaded');
   } catch (err) {
     c.innerHTML = `<div class="empty-state">Project Not Found<br><br><a href="#/projects">Back to Projects</a></div>`;
@@ -551,6 +667,7 @@ async function renderNoteDetail(id) {
           ${shareBar('n', n.slug)}
         </div>
       </div>`;
+    highlightCodeBlocks(c);
     setStatus('Note loaded');
   } catch (err) {
     c.innerHTML = `<div class="empty-state">Note Not Found<br><br><a href="#/notes">Back to Notes</a></div>`;
@@ -603,8 +720,15 @@ async function renderActivityLogs() {
 
 async function showProjectForm(editId = null) {
   if (!isAdmin()) { showLoginScreen(); return; }
-  let p = { name: '', description: '', techStack: [], status: 'active', githubUrl: '', liveUrl: '', tags: [], notes: '' };
+  let p = { name: '', description: '', techStack: [], status: 'active', githubUrl: '', liveUrl: '', tags: [], notes: '', thumbnail: '', images: [] };
   if (editId) { try { p = await API.getProject(editId); } catch (e) { toast('Not found', 'error'); return; } }
+
+  // Create drop zones
+  let pendingThumbnail = null;
+  let pendingImages = [];
+  const thumbDZ = createDropZone({ icon: '🖼️', label: 'Drop thumbnail here', hint: 'Single image, max 10MB', multiple: false, onFiles: files => { pendingThumbnail = files[0]; } });
+  const imagesDZ = createDropZone({ icon: '📸', label: 'Drop project images here', hint: 'Multiple images, max 10MB each', multiple: true, onFiles: files => { pendingImages.push(...files); } });
+
   openModal(editId ? 'Edit Project' : 'New Project', `
     <form id="pForm">
       <div class="form-group"><label class="form-label">Project Name *</label><input class="form-input" name="name" value="${esc(p.name)}" required></div>
@@ -624,12 +748,38 @@ async function showProjectForm(editId = null) {
         <div class="form-group"><label class="form-label">Live URL</label><input class="form-input" name="liveUrl" value="${esc(p.liveUrl || '')}"></div>
       </div>
       <div class="form-group"><label class="form-label">Tags</label><input class="form-input" name="tags" value="${(p.tags || []).join(', ')}"><span class="form-hint">Comma-separated</span></div>
-      <div class="form-group"><label class="form-label">Notes (Markdown)</label><textarea class="form-textarea" name="notes">${p.notes || ''}</textarea></div>
+      <div class="form-group">
+        <label class="form-label">🖼️ Thumbnail</label>
+        ${p.thumbnail ? `<div style="margin-bottom:6px;"><img src="${p.thumbnail}" style="max-height:80px;border:2px inset;"></div>` : ''}
+        ${thumbDZ.html}
+      </div>
+      <div class="form-group">
+        <label class="form-label">📸 Project Images</label>
+        ${(p.images && p.images.length) ? `<div class="media-preview-grid" style="margin-bottom:6px;">${p.images.map(img => `<div class="media-preview-item"><img src="${img}"></div>`).join('')}</div>` : ''}
+        ${imagesDZ.html}
+      </div>
+      <div class="form-group"><label class="form-label">Notes (Markdown)</label><textarea class="form-textarea" name="notes" id="projectNotesEditor">${p.notes || ''}</textarea></div>
       <div class="form-actions">
         <button type="button" class="win-btn" onclick="closeModal()">Cancel</button>
         <button type="submit" class="win-btn win-btn-primary">${editId ? 'Update' : 'Create'}</button>
       </div>
     </form>`);
+
+  // Initialize EasyMDE for project notes
+  let notesEditor = null;
+  try {
+    if (typeof EasyMDE !== 'undefined') {
+      notesEditor = new EasyMDE({
+        element: document.getElementById('projectNotesEditor'),
+        spellChecker: false,
+        status: ['lines', 'words'],
+        toolbar: ['bold', 'italic', 'heading', '|', 'code', 'quote', 'unordered-list', 'ordered-list', '|', 'link', 'image', 'table', '|', 'preview', 'side-by-side', 'fullscreen', '|', 'guide'],
+        placeholder: 'Write project notes in Markdown...',
+        initialValue: p.notes || '',
+      });
+    }
+  } catch (e) { console.warn('EasyMDE init failed:', e); }
+
   document.getElementById('pForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
@@ -637,11 +787,27 @@ async function showProjectForm(editId = null) {
       name: fd.get('name'), description: fd.get('description'), status: fd.get('status'),
       techStack: fd.get('techStack').split(',').map(s => s.trim()).filter(Boolean),
       githubUrl: fd.get('githubUrl'), liveUrl: fd.get('liveUrl'),
-      tags: fd.get('tags').split(',').map(s => s.trim()).filter(Boolean), notes: fd.get('notes')
+      tags: fd.get('tags').split(',').map(s => s.trim()).filter(Boolean),
+      notes: notesEditor ? notesEditor.value() : fd.get('notes')
     };
     try {
-      if (editId) { await API.updateProject(editId, data); toast('Project updated!', 'success'); }
-      else { await API.createProject(data); toast('Project created!', 'success'); }
+      let project;
+      if (editId) { project = await API.updateProject(editId, data); toast('Project updated!', 'success'); }
+      else { project = await API.createProject(data); toast('Project created!', 'success'); }
+      const pid = project.id || editId;
+      // Upload thumbnail if pending
+      if (pendingThumbnail && pid) {
+        const tf = new FormData(); tf.append('thumbnail', pendingThumbnail);
+        await API.uploadThumbnail(pid, tf);
+        toast('Thumbnail uploaded!', 'success');
+      }
+      // Upload images if pending
+      if (pendingImages.length && pid) {
+        const imf = new FormData();
+        pendingImages.forEach(f => imf.append('images', f));
+        await API.uploadMedia(pid, imf);
+        toast(`${pendingImages.length} image(s) uploaded!`, 'success');
+      }
       closeModal(); Router.resolve();
     } catch (err) { toast(err.message, 'error'); }
   });
@@ -662,18 +828,40 @@ async function showNoteForm(editId = null) {
         <div class="form-group"><label class="form-label">Tags</label><input class="form-input" name="tags" value="${(n.tags || []).join(', ')}"><span class="form-hint">Comma-separated</span></div>
       </div>
       <div class="form-group"><label class="form-check"><input type="checkbox" name="pinned" ${n.pinned ? 'checked' : ''}> 📌 Pin this note</label></div>
-      <div class="form-group"><label class="form-label">Content (Markdown)</label><textarea class="form-textarea" name="content" style="min-height:200px;">${n.content || ''}</textarea></div>
+      <div class="form-group"><label class="form-label">Content (Markdown)</label><textarea class="form-textarea" name="content" id="noteContentEditor" style="min-height:200px;">${n.content || ''}</textarea></div>
       <div class="form-actions">
         <button type="button" class="win-btn" onclick="closeModal()">Cancel</button>
         <button type="submit" class="win-btn win-btn-primary">${editId ? 'Update' : 'Create'}</button>
       </div>
     </form>`);
+
+  // Initialize EasyMDE for note content
+  let contentEditor = null;
+  try {
+    if (typeof EasyMDE !== 'undefined') {
+      contentEditor = new EasyMDE({
+        element: document.getElementById('noteContentEditor'),
+        spellChecker: false,
+        status: ['lines', 'words'],
+        toolbar: ['bold', 'italic', 'heading', 'heading-smaller', '|', 'code', 'quote', 'unordered-list', 'ordered-list', '|', 'link', 'image', 'table', 'horizontal-rule', '|', 'preview', 'side-by-side', 'fullscreen', '|', 'guide'],
+        placeholder: 'Write your note in Markdown...\n\nSupports: **bold**, *italic*, `code`, ```code blocks```, tables, task lists, and more!',
+        initialValue: n.content || '',
+        renderingConfig: {
+          codeSyntaxHighlighting: true,
+        },
+      });
+    }
+  } catch (e) { console.warn('EasyMDE init failed:', e); }
+
   document.getElementById('nForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
     const data = {
-      title: fd.get('title'), content: fd.get('content'), category: fd.get('category'),
-      tags: fd.get('tags').split(',').map(s => s.trim()).filter(Boolean), pinned: fd.has('pinned')
+      title: fd.get('title'),
+      content: contentEditor ? contentEditor.value() : fd.get('content'),
+      category: fd.get('category'),
+      tags: fd.get('tags').split(',').map(s => s.trim()).filter(Boolean),
+      pinned: fd.has('pinned')
     };
     try {
       if (editId) { await API.updateNote(editId, data); toast('Note updated!', 'success'); }

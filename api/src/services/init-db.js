@@ -10,7 +10,7 @@ async function initDB() {
   try {
     await client.query('BEGIN');
 
-    // Projects table (with slug)
+    // Projects table (with slug, thumbnail, images)
     await client.query(`
       CREATE TABLE IF NOT EXISTS projects (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -23,6 +23,8 @@ async function initDB() {
         live_url VARCHAR(500) DEFAULT '',
         tags TEXT[] DEFAULT '{}',
         notes TEXT DEFAULT '',
+        thumbnail VARCHAR(500) DEFAULT '',
+        images TEXT[] DEFAULT '{}',
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
@@ -74,6 +76,24 @@ async function initDB() {
       DO $$ BEGIN
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='projects' AND column_name='slug') THEN
           ALTER TABLE projects ADD COLUMN slug VARCHAR(255) UNIQUE;
+        END IF;
+      END $$;
+    `);
+
+    // Add thumbnail column to projects if missing (migration)
+    await client.query(`
+      DO $$ BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='projects' AND column_name='thumbnail') THEN
+          ALTER TABLE projects ADD COLUMN thumbnail VARCHAR(500) DEFAULT '';
+        END IF;
+      END $$;
+    `);
+
+    // Add images column to projects if missing (migration)
+    await client.query(`
+      DO $$ BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='projects' AND column_name='images') THEN
+          ALTER TABLE projects ADD COLUMN images TEXT[] DEFAULT '{}';
         END IF;
       END $$;
     `);
