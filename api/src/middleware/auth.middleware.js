@@ -19,7 +19,9 @@ function authMiddleware(req, res, next) {
     // PUBLIC: Allow GET on projects and notes (read-only access)
     if (req.method === 'GET' && (
         req.path.startsWith('/api/projects') ||
-        req.path.startsWith('/api/notes')
+        req.path.startsWith('/api/notes') ||
+        req.path.startsWith('/api/stats/public') ||
+        req.path.startsWith('/api/comments/')
     )) {
         // Still attach user if token present (for frontend to know auth status)
         const authHeader = req.headers.authorization;
@@ -27,6 +29,16 @@ function authMiddleware(req, res, next) {
             const decoded = verifyToken(authHeader.split(' ')[1]);
             if (decoded) req.user = decoded;
         }
+        return next();
+    }
+
+    // PUBLIC: Allow POST on stats/view, comments, subscribe, and DELETE on unsubscribe
+    if (
+        (req.method === 'POST' && req.path === '/api/stats/view') ||
+        (req.method === 'POST' && req.path.match(/^\/api\/comments\/\w+\/[\w-]+$/)) ||
+        (req.method === 'POST' && req.path === '/api/subscribe') ||
+        (req.method === 'DELETE' && req.path.startsWith('/api/unsubscribe/'))
+    ) {
         return next();
     }
 

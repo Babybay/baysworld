@@ -71,6 +71,46 @@ async function initDB() {
       );
     `);
 
+    // Page views table (analytics)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS page_views (
+        id SERIAL PRIMARY KEY,
+        entity_type VARCHAR(20) NOT NULL,
+        entity_id UUID,
+        ip_address VARCHAR(45),
+        user_agent TEXT DEFAULT '',
+        referrer TEXT DEFAULT '',
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    // Comments table (visitor comments)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS comments (
+        id SERIAL PRIMARY KEY,
+        entity_type VARCHAR(20) NOT NULL,
+        entity_id UUID NOT NULL,
+        author_name VARCHAR(100) NOT NULL,
+        author_email VARCHAR(255) DEFAULT '',
+        content TEXT NOT NULL,
+        approved BOOLEAN DEFAULT false,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    // Email subscriptions table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS email_subscriptions (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        name VARCHAR(100) DEFAULT '',
+        notify_new_project BOOLEAN DEFAULT true,
+        notify_new_note BOOLEAN DEFAULT true,
+        active BOOLEAN DEFAULT true,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
     // Add slug column to projects if missing (migration)
     await client.query(`
       DO $$ BEGIN

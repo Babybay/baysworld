@@ -333,3 +333,208 @@
     font-weight: bold;
     color: var(--win-white);
 }
+
+/* ══════════════════════════════════════════════════════════
+   SHARE BAR & SOCIAL BUTTONS
+   ══════════════════════════════════════════════════════════ */
+.share-bar {
+    margin: 10px 0;
+    padding: 8px 10px;
+    background: #fffde7;
+    border: 1px solid #e0d080;
+    font-size: 11px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+
+.share-label {
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.share-url {
+    flex: 1;
+    padding: 2px 6px;
+    border: 1px inset;
+    background: #fff;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 100px;
+}
+
+.share-buttons {
+    display: flex;
+    gap: 3px;
+    flex-wrap: wrap;
+}
+
+.share-btn {
+    display: inline-block;
+    padding: 2px 6px;
+    font-size: 10px;
+    text-decoration: none;
+    border: 2px outset;
+    background: linear-gradient(to bottom, #fff 0%, #e8e8e8 100%);
+    color: var(--win-black);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.share-btn:hover {
+    background: linear-gradient(to bottom, #e0e0ff 0%, #c8c8f0 100%);
+}
+
+.share-twitter:hover {
+    background: #d4edfa;
+}
+
+.share-linkedin:hover {
+    background: #d4e8f0;
+}
+
+.share-email:hover {
+    background: #fde8d4;
+}
+
+.share-whatsapp:hover {
+    background: #d4f0d4;
+}
+
+/* ══════════════════════════════════════════════════════════
+   COMMENTS SECTION
+   ══════════════════════════════════════════════════════════ */
+.comment-item {
+    padding: 8px;
+    margin-bottom: 6px;
+    border: 1px solid #ddd;
+    background: #fafafa;
+    font-size: 11px;
+}
+
+.comment-item:nth-child(even) {
+    background: #f4f4f4;
+}
+
+.comment-header {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 4px;
+    font-size: 10px;
+}
+
+.comment-date {
+    color: #808080;
+    font-size: 9px;
+    margin-left: auto;
+}
+
+.comment-body {
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.comment-form {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.pending-comment {
+    border-left: 3px solid #e0a030;
+    background: #fffcf0;
+}
+
+/* ══════════════════════════════════════════════════════════
+   STATS / ANALYTICS CHARTS
+   ══════════════════════════════════════════════════════════ */
+.chart-container {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 100px;
+    padding: 4px 0 0 0;
+}
+
+.chart-bar-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    gap: 2px;
+    justify-content: flex-end;
+}
+
+.chart-bar {
+    width: 100%;
+    min-height: 2px;
+    background: linear-gradient(to top, var(--title-blue), var(--title-blue-light));
+    border: 1px outset var(--title-blue-light);
+    transition: height 0.3s;
+}
+
+.chart-label {
+    font-size: 7px;
+    color: #808080;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    max-height: 35px;
+    overflow: hidden;
+}
+
+.bar-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+    font-size: 11px;
+}
+
+.bar-name {
+    min-width: 100px;
+    max-width: 150px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bar-track {
+    flex: 1;
+    height: 14px;
+    background: var(--win-bg);
+    border: 1px inset;
+    overflow: hidden;
+}
+
+.bar-fill {
+    height: 100%;
+    transition: width 0.4s;
+}
+
+.bar-fill-blue {
+    background: linear-gradient(to right, var(--title-blue), var(--title-blue-light));
+}
+
+.bar-fill-green {
+    background: linear-gradient(to right, #2e8b57, #3cb371);
+}
+
+.bar-fill-purple {
+    background: linear-gradient(to right, #6a5acd, #9370db);
+}
+
+.bar-count {
+    font-size: 10px;
+    font-weight: bold;
+    color: #555;
+    min-width: 24px;
+    text-align: right;
+}

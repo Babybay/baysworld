@@ -8,6 +8,9 @@ const noteRoutes = require('./routes/notes.routes');
 const logsRoutes = require('./routes/logs.routes');
 const seoRoutes = require('./routes/seo.routes');
 const mediaRoutes = require('./routes/media.routes');
+const statsRoutes = require('./routes/stats.routes');
+const commentsRoutes = require('./routes/comments.routes');
+const subscriptionsRoutes = require('./routes/subscriptions.routes');
 
 const app = express();
 
@@ -39,6 +42,11 @@ app.use(authMiddleware);
 app.use('/api/projects', projectRoutes);
 app.use('/api/notes', noteRoutes);
 app.use('/api/media', mediaRoutes);
+app.use('/api/stats', statsRoutes);
+app.use('/api/comments', commentsRoutes);
+app.use('/api/subscribe', subscriptionsRoutes);
+app.use('/api/unsubscribe', subscriptionsRoutes);
+app.use('/api/subscriptions', subscriptionsRoutes);
 app.use('/api/logs', logsRoutes);
 
 // API health check

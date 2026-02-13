@@ -90,6 +90,34 @@ const API = {
   },
   getMedia(projectId) { return this.request('GET', '/media/' + projectId); },
   deleteMedia(projectId, filename) { return this.request('DELETE', `/media/${projectId}/${filename}`); },
+  // Stats
+  recordView(entityType, entityId) {
+    return fetch('/api/stats/view', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entityType, entityId }),
+    }).catch(() => { });
+  },
+  getPublicStats() { return this.request('GET', '/stats/public'); },
+  getStats() { return this.request('GET', '/stats'); },
+  // Comments
+  getComments(entityType, entityId) { return this.request('GET', `/comments/${entityType}/${entityId}`); },
+  addComment(entityType, entityId, data) {
+    return fetch(`/api/comments/${entityType}/${entityId}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }).then(r => { if (!r.ok) throw new Error('Comment failed'); return r.json(); });
+  },
+  getPendingComments() { return this.request('GET', '/comments/pending'); },
+  approveComment(id) { return this.request('PUT', `/comments/${id}/approve`); },
+  deleteComment(id) { return this.request('DELETE', '/comments/' + id); },
+  // Subscriptions
+  subscribe(data) {
+    return fetch('/api/subscribe', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }).then(r => { if (!r.ok) throw new Error('Subscribe failed'); return r.json(); });
+  },
+  getSubscribers() { return this.request('GET', '/subscriptions'); },
 };
 
 // ── Markdown Parser (enhanced: tables, task lists, images) ──
@@ -261,10 +289,18 @@ const BASE_URL = 'https://thebaysworld.xyz';
 function shareBar(type, slug) {
   if (!slug) return '';
   const url = `${BASE_URL}/${type}/${slug}`;
-  return `<div class="share-bar" style="margin:10px 0;padding:6px 10px;background:#fffde7;border:1px solid #e0d080;font-size:11px;display:flex;gap:6px;align-items:center;">
-    📎 Share: <span style="flex:1;padding:2px 6px;border:1px inset;background:#fff;font-family:monospace;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${url}</span>
-    <button class="win-btn btn-sm" onclick="navigator.clipboard.writeText('${url}').then(()=>{this.textContent='✓ Copied!'}).catch(()=>{})">📋 Copy</button>
-    <a class="win-btn btn-sm" href="${url}" target="_blank" style="text-decoration:none;">🔗 Open</a>
+  const title = encodeURIComponent('Check this out on BaysWorld!');
+  const encodedUrl = encodeURIComponent(url);
+  return `<div class="share-bar">
+    <span class="share-label">📎 Share:</span>
+    <span class="share-url">${url}</span>
+    <div class="share-buttons">
+      <button class="win-btn btn-sm" onclick="navigator.clipboard.writeText('${url}').then(()=>{this.textContent='✓ Copied!'}).catch(()=>{})">📋 Copy</button>
+      <a class="share-btn share-twitter" href="https://twitter.com/intent/tweet?url=${encodedUrl}&text=${title}" target="_blank" title="Share on Twitter">🐦 Twitter</a>
+      <a class="share-btn share-linkedin" href="https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}" target="_blank" title="Share on LinkedIn">💼 LinkedIn</a>
+      <a class="share-btn share-email" href="mailto:?subject=${title}&body=${title}%20${encodedUrl}" title="Share via Email">📧 Email</a>
+      <a class="share-btn share-whatsapp" href="https://wa.me/?text=${title}%20${encodedUrl}" target="_blank" title="Share on WhatsApp">💬 WhatsApp</a>
+    </div>
   </div>`;
 }
 
@@ -488,10 +524,57 @@ async function renderDashboard() {
         </div>
       </div>` : `<div class="groupbox"><p>No notes yet.${adminOnly(' <a href="#" onclick="showNoteForm();return false;">Write your first note!</a>')}</p></div>`}
 
+      ${adminOnly(`
+      <div class="win-window" style="margin-top:12px;">
+        <div class="win-title-bar"><span>📊 Quick Stats</span></div>
+        <div class="win-body" style="padding:6px;">
+          <div id="dashQuickStats" style="color:#808080;font-size:10px;">Loading analytics...</div>
+          <div style="text-align:right;margin-top:4px;"><a href="#/stats">Full Analytics Dashboard →</a></div>
+        </div>
+      </div>`)}
+
       <hr class="retro-hr">
+
+      <fieldset class="groupbox" style="margin:10px 0;">
+        <legend>📬 Stay Updated</legend>
+        <p style="font-size:10px;margin-bottom:6px;">Get notified when new projects or notes are published!</p>
+        <form id="subscribeForm" style="display:flex;gap:4px;align-items:center;">
+          <input class="form-input" name="email" type="email" placeholder="your@email.com" required style="flex:1;font-size:10px;">
+          <input class="form-input" name="name" placeholder="Name (optional)" style="width:100px;font-size:10px;">
+          <button type="submit" class="win-btn btn-sm">📩 Subscribe</button>
+        </form>
+      </fieldset>
+
       <div class="visitor-counter">You are visitor number:<br><span class="counter-display">${visitorNum}</span></div>
       <p style="text-align:center;font-size:10px;color:#808080;margin-top:8px;">🏗️ This site is under construction 🏗️</p>
     `;
+    // Subscribe form handler
+    const sf = document.getElementById('subscribeForm');
+    if (sf) sf.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        const fd = new FormData(e.target);
+        await API.subscribe({ email: fd.get('email'), name: fd.get('name') });
+        toast('Subscribed! 📬', 'success');
+        sf.reset();
+      } catch (err) { toast(err.message, 'error'); }
+    });
+    // Load quick stats for admin
+    if (isAdmin()) {
+      try {
+        const stats = await API.getStats();
+        const el = document.getElementById('dashQuickStats');
+        if (el) el.innerHTML = `
+          <div class="stats-row" style="margin:0;">
+            <div class="stat-box"><span class="stat-num">${stats.totalViews}</span><span class="stat-label">Total Views</span></div>
+            <div class="stat-box"><span class="stat-num">${stats.todayViews}</span><span class="stat-label">Today</span></div>
+            <div class="stat-box"><span class="stat-num">${stats.pendingComments}</span><span class="stat-label">Pending 💬</span></div>
+            <div class="stat-box"><span class="stat-num">${stats.totalSubscribers}</span><span class="stat-label">Subscribers</span></div>
+          </div>`;
+      } catch (e) { }
+    }
+    // Track dashboard view
+    API.recordView('dashboard', null);
     setStatus('Done');
   } catch (err) {
     c.innerHTML = `<div class="empty-state">Error: ${err.message}</div>`;
@@ -589,9 +672,32 @@ async function renderProjectDetail(id) {
           ${galleryHtml}
           ${p.notes ? `<fieldset class="groupbox"><legend>Notes</legend><div class="note-content">${parseMarkdown(p.notes)}</div></fieldset>` : ''}
           ${shareBar('p', p.slug)}
+          <fieldset class="groupbox"><legend>💬 Comments</legend>
+            <div id="commentsArea">Loading comments...</div>
+            <form id="commentForm" class="comment-form" style="margin-top:8px;">
+              <input class="form-input" name="authorName" placeholder="Your name *" required style="font-size:10px;">
+              <textarea class="form-textarea" name="content" placeholder="Write a comment... (max 2000 chars)" required style="min-height:60px;font-size:10px;"></textarea>
+              <button type="submit" class="win-btn btn-sm">💬 Post Comment</button>
+              <span style="font-size:9px;color:#808080;">Comments are reviewed before appearing.</span>
+            </form>
+          </fieldset>
         </div>
       </div>`;
     highlightCodeBlocks(c);
+    // Track view
+    API.recordView('project', id);
+    // Load comments
+    loadComments('project', id);
+    // Comment form
+    document.getElementById('commentForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      try {
+        await API.addComment('project', id, { authorName: fd.get('authorName'), content: fd.get('content') });
+        toast('Comment submitted for review! ✅', 'success');
+        e.target.reset();
+      } catch (err) { toast(err.message, 'error'); }
+    });
     setStatus('Project loaded');
   } catch (err) {
     c.innerHTML = `<div class="empty-state">Project Not Found<br><br><a href="#/projects">Back to Projects</a></div>`;
@@ -665,9 +771,32 @@ async function renderNoteDetail(id) {
           <hr class="retro-hr">
           <div class="note-content">${parseMarkdown(n.content)}</div>
           ${shareBar('n', n.slug)}
+          <fieldset class="groupbox"><legend>💬 Comments</legend>
+            <div id="commentsArea">Loading comments...</div>
+            <form id="commentForm" class="comment-form" style="margin-top:8px;">
+              <input class="form-input" name="authorName" placeholder="Your name *" required style="font-size:10px;">
+              <textarea class="form-textarea" name="content" placeholder="Write a comment... (max 2000 chars)" required style="min-height:60px;font-size:10px;"></textarea>
+              <button type="submit" class="win-btn btn-sm">💬 Post Comment</button>
+              <span style="font-size:9px;color:#808080;">Comments are reviewed before appearing.</span>
+            </form>
+          </fieldset>
         </div>
       </div>`;
     highlightCodeBlocks(c);
+    // Track view
+    API.recordView('note', id);
+    // Load comments
+    loadComments('note', id);
+    // Comment form
+    document.getElementById('commentForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      try {
+        await API.addComment('note', id, { authorName: fd.get('authorName'), content: fd.get('content') });
+        toast('Comment submitted for review! ✅', 'success');
+        e.target.reset();
+      } catch (err) { toast(err.message, 'error'); }
+    });
     setStatus('Note loaded');
   } catch (err) {
     c.innerHTML = `<div class="empty-state">Note Not Found<br><br><a href="#/notes">Back to Notes</a></div>`;
@@ -890,6 +1019,185 @@ async function togglePin(id, pinned) {
 }
 
 // ══════════════════════════════════════════════════════════
+// COMMENTS, STATS & PENDING COMMENTS
+// ══════════════════════════════════════════════════════════
+
+async function loadComments(entityType, entityId) {
+  const area = document.getElementById('commentsArea');
+  if (!area) return;
+  try {
+    const comments = await API.getComments(entityType, entityId);
+    if (!comments.length) {
+      area.innerHTML = '<p style="color:#808080;font-size:10px;">No comments yet. Be the first to comment!</p>';
+      return;
+    }
+    area.innerHTML = comments.map(c => `
+      <div class="comment-item">
+        <div class="comment-header">
+          <strong>${esc(c.authorName)}</strong>
+          <span class="comment-date">${timeAgo(c.createdAt)}</span>
+        </div>
+        <div class="comment-body">${esc(c.content)}</div>
+      </div>
+    `).join('');
+  } catch (err) {
+    area.innerHTML = '<p style="color:#808080;font-size:10px;">Could not load comments.</p>';
+  }
+}
+
+async function renderStats() {
+  if (!isAdmin()) { showLoginScreen(); return; }
+  const c = document.getElementById('contentArea');
+  setStatus('Loading analytics...');
+  try {
+    const s = await API.getStats();
+    const maxProjectViews = s.topProjects.length ? Math.max(...s.topProjects.map(p => p.views)) : 1;
+    const maxNoteViews = s.topNotes.length ? Math.max(...s.topNotes.map(n => n.views)) : 1;
+    const maxCatViews = s.categoryEngagement.length ? Math.max(...s.categoryEngagement.map(c => c.views)) : 1;
+
+    c.innerHTML = `
+      <div class="win-window">
+        <div class="win-title-bar"><span>\ud83d\udcca Analytics Dashboard</span></div>
+        <div class="win-body">
+          <div class="stats-row">
+            <div class="stat-box"><span class="stat-num">${s.totalViews}</span><span class="stat-label">Total Views</span></div>
+            <div class="stat-box"><span class="stat-num">${s.todayViews}</span><span class="stat-label">Today</span></div>
+            <div class="stat-box"><span class="stat-num">${s.weekViews}</span><span class="stat-label">This Week</span></div>
+            <div class="stat-box"><span class="stat-num">${s.totalComments}</span><span class="stat-label">Comments</span></div>
+            <div class="stat-box"><span class="stat-num">${s.pendingComments}</span><span class="stat-label">Pending \ud83d\udcac</span></div>
+            <div class="stat-box"><span class="stat-num">${s.totalSubscribers}</span><span class="stat-label">Subscribers</span></div>
+          </div>
+
+          <fieldset class="groupbox"><legend>\ud83d\udcc8 Views (Last 14 Days)</legend>
+            <div class="chart-container">
+              ${s.recentViewsByDay.length ? s.recentViewsByDay.map(d => {
+      const maxDay = Math.max(...s.recentViewsByDay.map(x => x.views)) || 1;
+      const pct = Math.round((d.views / maxDay) * 100);
+      const label = new Date(d.day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      return `<div class="chart-bar-wrap"><div class="chart-bar" style="height:${pct}%" title="${d.views} views"></div><span class="chart-label">${label}</span></div>`;
+    }).join('') : '<p style="color:#808080;font-size:10px;">No view data yet.</p>'}
+            </div>
+          </fieldset>
+
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <fieldset class="groupbox" style="flex:1;min-width:200px;"><legend>\ud83c\udfc6 Most Viewed Projects</legend>
+              ${s.topProjects.length ? s.topProjects.map(p => `
+                <div class="bar-item">
+                  <a href="#/projects/${p.id}" class="bar-name">${esc(p.name)}</a>
+                  <div class="bar-track"><div class="bar-fill bar-fill-blue" style="width:${Math.round((p.views / maxProjectViews) * 100)}%"></div></div>
+                  <span class="bar-count">${p.views}</span>
+                </div>
+              `).join('') : '<p style="color:#808080;font-size:10px;">No project views yet.</p>'}
+            </fieldset>
+
+            <fieldset class="groupbox" style="flex:1;min-width:200px;"><legend>\ud83c\udfc6 Most Viewed Notes</legend>
+              ${s.topNotes.length ? s.topNotes.map(n => `
+                <div class="bar-item">
+                  <a href="#/notes/${n.id}" class="bar-name">${esc(n.name)}</a>
+                  <div class="bar-track"><div class="bar-fill bar-fill-green" style="width:${Math.round((n.views / maxNoteViews) * 100)}%"></div></div>
+                  <span class="bar-count">${n.views}</span>
+                </div>
+              `).join('') : '<p style="color:#808080;font-size:10px;">No note views yet.</p>'}
+            </fieldset>
+          </div>
+
+          <fieldset class="groupbox"><legend>\ud83d\udcca Category Engagement</legend>
+            ${s.categoryEngagement.length ? s.categoryEngagement.map(cat => `
+              <div class="bar-item">
+                <span class="bar-name cat-tag ${getCatClass(cat.category)}">${esc(cat.category)}</span>
+                <div class="bar-track"><div class="bar-fill bar-fill-purple" style="width:${Math.round((cat.views / maxCatViews) * 100)}%"></div></div>
+                <span class="bar-count">${cat.views}</span>
+              </div>
+            `).join('') : '<p style="color:#808080;font-size:10px;">No category data yet.</p>'}
+          </fieldset>
+
+          ${s.pendingComments > 0 ? `
+          <fieldset class="groupbox"><legend>\u26a0\ufe0f Pending Comments (${s.pendingComments})</legend>
+            <div style="text-align:center;"><a href="#/comments" class="win-btn">Manage Comments \u2192</a></div>
+          </fieldset>` : ''}
+
+          <fieldset class="groupbox"><legend>\ud83d\udce7 Subscribers (${s.totalSubscribers})</legend>
+            <div id="subscribersList">Loading...</div>
+          </fieldset>
+        </div>
+      </div>
+    `;
+    // Load subscribers
+    try {
+      const subs = await API.getSubscribers();
+      const el = document.getElementById('subscribersList');
+      if (el) {
+        if (!subs.length) { el.innerHTML = '<p style="color:#808080;font-size:10px;">No subscribers yet.</p>'; }
+        else {
+          el.innerHTML = `<table class="data-table"><thead><tr><th>Email</th><th>Name</th><th>Active</th><th>Since</th></tr></thead><tbody>
+            ${subs.map(s => `<tr><td>${esc(s.email)}</td><td>${esc(s.name || '-')}</td><td>${s.active ? '\u2705' : '\u274c'}</td><td style="font-size:10px;">${fmtDate(s.createdAt)}</td></tr>`).join('')}
+          </tbody></table>`;
+        }
+      }
+    } catch (e) { }
+    setStatus('Analytics loaded');
+  } catch (err) {
+    c.innerHTML = `<div class="empty-state">Failed to load analytics. Are you logged in?<br><br><a href="#/">Back to Dashboard</a></div>`;
+  }
+}
+
+async function renderPendingComments() {
+  if (!isAdmin()) { showLoginScreen(); return; }
+  const c = document.getElementById('contentArea');
+  setStatus('Loading pending comments...');
+  try {
+    const comments = await API.getPendingComments();
+    c.innerHTML = `
+      <div class="win-window">
+        <div class="win-title-bar"><span>\ud83d\udcac Pending Comments (${comments.length})</span></div>
+        <div class="win-body">
+          ${!comments.length ? '<div class="empty-state">\u2705 No pending comments!</div>' :
+        comments.map(cm => `
+              <div class="comment-item pending-comment" id="pending-${cm.id}">
+                <div class="comment-header">
+                  <strong>${esc(cm.authorName)}</strong>
+                  ${cm.authorEmail ? `<span style="color:#808080;">&lt;${esc(cm.authorEmail)}&gt;</span>` : ''}
+                  <span class="comment-date">${timeAgo(cm.createdAt)}</span>
+                </div>
+                <div style="font-size:9px;color:#808080;margin-bottom:4px;">
+                  On ${cm.entityType}: <a href="#/${cm.entityType}s/${cm.entityId}">${esc(cm.entityName || 'Unknown')}</a>
+                </div>
+                <div class="comment-body">${esc(cm.content)}</div>
+                <div style="margin-top:4px;">
+                  <button class="win-btn btn-sm" onclick="approveComment(${cm.id})">\u2705 Approve</button>
+                  <button class="win-btn btn-sm win-btn-danger" onclick="rejectComment(${cm.id})">\u274c Delete</button>
+                </div>
+              </div>
+            `).join('')}
+        </div>
+      </div>
+    `;
+    setStatus('Comments loaded');
+  } catch (err) {
+    c.innerHTML = `<div class="empty-state">Failed to load comments<br><br><a href="#/">Back to Dashboard</a></div>`;
+  }
+}
+
+async function approveComment(id) {
+  try {
+    await API.approveComment(id);
+    toast('Comment approved!', 'success');
+    const el = document.getElementById('pending-' + id);
+    if (el) el.style.display = 'none';
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+async function rejectComment(id) {
+  if (!confirm('Delete this comment permanently?')) return;
+  try {
+    await API.deleteComment(id);
+    toast('Comment deleted', 'success');
+    const el = document.getElementById('pending-' + id);
+    if (el) el.style.display = 'none';
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+// ══════════════════════════════════════════════════════════
 // INITIALIZATION
 // ══════════════════════════════════════════════════════════
 
@@ -898,6 +1206,8 @@ Router.on('/projects', renderProjectsList);
 Router.on('/projects/:id', renderProjectDetail);
 Router.on('/notes', renderNotesList);
 Router.on('/notes/:id', renderNoteDetail);
+Router.on('/stats', renderStats);
+Router.on('/comments', renderPendingComments);
 
 window.addEventListener('hashchange', () => Router.resolve());
 
