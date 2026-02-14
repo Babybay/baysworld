@@ -1,8 +1,3 @@
-/* ═══════════════════════════════════════════════════════════
-   BaysWorld v2.0 — Early 2000s / Windows 98/XP Retro Theme
-   ═══════════════════════════════════════════════════════════ */
-
-/* ── Retro Fonts — use system fonts like the old days ── */
 @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 
 :root {
@@ -536,6 +531,7 @@ a:hover {
     padding: 10px 20px;
     text-align: center;
     min-width: 120px;
+    text-decoration: none;
 }
 
 .stat-box .stat-num {
@@ -1302,6 +1298,7 @@ a:hover {
     flex-direction: column;
     height: 100vh;
 }
+
 /* Fix tree icons */
 .tree-item img {
     width: 16px;

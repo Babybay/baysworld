@@ -1,8 +1,3 @@
-/* ═══════════════════════════════════════════════════════════
-   BaysWorld v2.0 — Frontend Application (Retro 2000s Edition)
-   Public Portfolio + Admin Auth
-   ═══════════════════════════════════════════════════════════ */
-
 // ── Auth State ──
 const Auth = {
   tokenKey: 'baysworld_token',
@@ -468,7 +463,7 @@ async function renderDashboard() {
     const visitorNum = String(Math.floor(Math.random() * 9000) + 1000).padStart(6, '0');
 
     c.innerHTML = `
-      <div class="retro-marquee"><span>★ Welcome to Babybay's World a.k.a BaysWorld Hub ★ Babybay (SB) personal project portfolio and knowledge base ★ Powered by Node.js ★</span></div>
+      <div class="retro-marquee"><span>★ Welcome to Babybay's World a.k.a BaysWorld Hub ★ Personal project portfolio and knowledge base ★ Powered by Node.js ★</span></div>
 
       <div class="welcome-box" style="margin-top:10px;">
         <h2>📟 Welcome to BaysWorld</h2>
@@ -568,7 +563,7 @@ async function renderDashboard() {
           <div class="stats-row" style="margin:0;">
             <div class="stat-box"><span class="stat-num">${stats.totalViews}</span><span class="stat-label">Total Views</span></div>
             <div class="stat-box"><span class="stat-num">${stats.todayViews}</span><span class="stat-label">Today</span></div>
-            <div class="stat-box"><span class="stat-num">${stats.pendingComments}</span><span class="stat-label">Pending 💬</span></div>
+            <a href="#/comments" class="stat-box"><span class="stat-num">${stats.pendingComments}</span><span class="stat-label">Pending 💬</span></a>
             <div class="stat-box"><span class="stat-num">${stats.totalSubscribers}</span><span class="stat-label">Subscribers</span></div>
           </div>`;
       } catch (e) { }
